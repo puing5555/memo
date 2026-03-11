@@ -1,0 +1,2426 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#ffffff">
+<title>Jay Daily OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ── */
+:root {
+  --bg: #f5f0eb;
+  --bg2: #ede8e3;
+  --surface: #ffffff;
+  --surface2: #faf7f4;
+  --surface3: #f0ece8;
+  --border: #ede8e3;
+  --border2: #e0d9d2;
+  --text: #212121;
+  --text2: #6d6360;
+  --muted: #b3a9a4;
+  --accent: #ff6f0f;
+  --accent-dim: rgba(255,111,15,0.08);
+  --accent-glow: rgba(255,111,15,0.18);
+  --red: #e03030;
+  --red-dim: rgba(224,48,48,0.08);
+  --yellow: #e07b00;
+  --yellow-dim: rgba(224,123,0,0.1);
+  --blue: #2277dd;
+  --blue-dim: rgba(34,119,221,0.08);
+  --purple: #7755cc;
+  --inset-top: env(safe-area-inset-top, 0px);
+  --inset-bot: env(safe-area-inset-bottom, 0px);
+}
+
+/* ── RESET ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; background: var(--bg); -webkit-font-smoothing: antialiased; }
+body { font-family: "Noto Sans KR", sans-serif; color: var(--text); }
+button { font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+input, textarea, select { font-family: inherit; -webkit-tap-highlight-color: transparent; }
+textarea { resize: none; }
+
+/* ── APP SHELL ── */
+#app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+
+/* ── VIEW SYSTEM ── */
+.views { flex: 1; min-height: 0; position: relative; padding-top: var(--inset-top); overflow: hidden; }
+.view { display: none; flex-direction: column; position: absolute; inset: 0; overflow: hidden; }
+.view.active { display: flex; }
+
+/* ── BOTTOM NAV ── */
+.bnav {
+  display: flex;
+  background: rgba(255,255,255,0.97);
+  border-top: 1px solid var(--border);
+  padding-bottom: var(--inset-bot);
+  flex-shrink: 0;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+.bnav-btn {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 10px 4px 7px;
+  border: none; background: transparent;
+  color: var(--muted); transition: color 0.2s;
+  position: relative;
+}
+.bnav-btn.on { color: var(--accent); }
+.bnav-icon { font-size: 20px; line-height: 1; transition: transform 0.2s; }
+.bnav-btn.on .bnav-icon { transform: scale(1.1); }
+.bnav-lbl { font-size: 9px; font-weight: 600; margin-top: 3px; letter-spacing: 0.3px; text-transform: uppercase; }
+.bnav-badge {
+  position: absolute; top: 7px; right: calc(50% - 15px);
+  width: 6px; height: 6px; background: var(--accent);
+  border-radius: 50%; display: none; border: 1.5px solid var(--bg);
+}
+.bnav-btn.has-badge .bnav-badge { display: block; }
+
+/* ── SCROLL ── */
+.scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.scroll::-webkit-scrollbar { display: none; }
+
+/* ── SECTION LABEL ── */
+.slabel { font-size: 12px; font-weight: 700; color: var(--text2); letter-spacing: -0.2px; }
+
+/* ── BUTTONS ── */
+.btn-main {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 14px; border-radius: 14px; border: none;
+  background: var(--accent); color: #fff;
+  font-size: 15px; font-weight: 700;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.btn-main:active { opacity: 0.85; transform: scale(0.98); }
+.btn-ghost {
+  padding: 14px 20px; border-radius: 14px;
+  border: 1.5px solid var(--border2); background: transparent;
+  color: var(--text2); font-size: 14px; font-weight: 500;
+}
+.btn-ghost:active { background: var(--surface2); }
+
+/* ── CARD ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 14px 16px; margin-bottom: 10px;
+}
+
+/* ── LOADING ── */
+.loading { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; padding: 8px 0; }
+.dots { display: flex; gap: 4px; }
+.dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: dp 1.2s infinite ease-in-out; }
+.dots span:nth-child(2) { animation-delay: 0.2s; opacity: 0.6; }
+.dots span:nth-child(3) { animation-delay: 0.4s; opacity: 0.3; }
+@keyframes dp { 0%,80%,100%{opacity:.15;transform:scale(.6)} 40%{opacity:1;transform:scale(1)} }
+
+/* ── EMPTY ── */
+.empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 20px; color: var(--muted); text-align: center; gap: 10px; }
+.empty-icon { font-size: 36px; opacity: 0.5; }
+.empty-text { font-size: 13px; line-height: 1.8; color: var(--muted); }
+
+/* ── CHIP ── */
+.chip-row { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+.chip-row::-webkit-scrollbar { display: none; }
+.chip {
+  padding: 7px 16px; border-radius: 100px;
+  border: 1.5px solid var(--border2); background: var(--surface);
+  color: var(--text2); font-size: 13px; font-weight: 500;
+  white-space: nowrap; flex-shrink: 0; transition: all 0.15s;
+}
+.chip.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+
+/* ═══════════════════════════════════
+   VIEW 1: 브레인덤프
+═══════════════════════════════════ */
+#v-dump { background: var(--bg); display: flex; flex-direction: column; overflow: hidden; }
+
+#dumpSplash {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 32px 24px 80px; gap: 0; position: relative;
+}
+
+.splash-brain {
+  font-size: 120px; line-height: 1;
+  animation: brainFloat 4s ease-in-out infinite;
+  filter: grayscale(1) brightness(1.15);
+  margin-bottom: 10px;
+}
+@keyframes brainFloat {
+  0%,100% { transform: translateY(0) rotate(-1deg); }
+  50%      { transform: translateY(-10px) rotate(1deg); }
+}
+
+.splash-greeting {
+  text-align: center;
+  margin-bottom: 24px;
+}
+.splash-greeting-time {
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px;
+}
+.splash-greeting-name {
+  font-size: 28px; font-weight: 800; color: var(--text);
+  letter-spacing: -1px; line-height: 1.1;
+}
+.splash-greeting-sub {
+  font-size: 13px; color: var(--muted); margin-top: 6px; font-weight: 400;
+}
+
+/* 말풍선 래퍼 (꼬리 포함) */
+.splash-bubble-wrap {
+  width: 100%; max-width: 340px; position: relative; margin-top: 4px;
+}
+/* 꼬리 테두리 */
+.splash-bubble-wrap::before {
+  content: '';
+  position: absolute;
+  top: -11px; left: 50%; transform: translateX(-50%);
+  border-left: 11px solid transparent;
+  border-right: 11px solid transparent;
+  border-bottom: 12px solid var(--border2);
+}
+/* 꼬리 본체 */
+.splash-bubble-wrap::after {
+  content: '';
+  position: absolute;
+  top: -9px; left: 50%; transform: translateX(-50%);
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 10px solid var(--surface);
+  transition: border-bottom-color 0.25s;
+}
+.splash-bubble-wrap.focused::before { border-bottom-color: var(--accent); }
+.splash-bubble-wrap.focused::after { border-bottom-color: var(--surface); }
+
+.splash-bubble {
+  width: 100%;
+  background: var(--surface);
+  border: 1.5px solid var(--border2);
+  border-radius: 20px;
+  padding: 18px 18px 14px;
+
+  transition: border-color 0.25s;
+  position: relative; z-index: 1;
+}
+.splash-bubble.active { border-color: var(--accent); }
+.splash-ta {
+  width: 100%; border: none; background: transparent;
+  color: var(--text); font-size: 15px; line-height: 1.75;
+  outline: none; resize: none; font-family: inherit;
+  min-height: 72px; max-height: 200px;
+}
+.splash-ta::placeholder { color: var(--muted); font-weight: 400; }
+.splash-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+.splash-hint { font-size: 11px; color: var(--muted); }
+.splash-send {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: none; background: var(--accent); color: #fff;
+  font-size: 16px; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s, opacity 0.15s;
+  box-shadow: 0 3px 10px rgba(0,200,5,0.25);
+}
+.splash-send:active { transform: scale(0.88); opacity: 0.8; }
+
+/* 채팅방 */
+#dumpChat { display: none; flex-direction: column; flex: 1; min-height: 0; }
+.dump-chat-messages {
+  flex: 1; overflow-y: auto; padding: 16px;
+  display: flex; flex-direction: column; gap: 10px;
+  -webkit-overflow-scrolling: touch;
+}
+.dump-chat-messages::-webkit-scrollbar { display: none; }
+.dump-msg-user {
+  align-self: flex-end;
+  background: var(--text); color: #ffffff;
+  border-radius: 18px 18px 4px 18px;
+  padding: 11px 15px; font-size: 14px; line-height: 1.65;
+  max-width: 82%; word-break: break-word; font-weight: 500;
+}
+.dump-msg-ai {
+  align-self: flex-start;
+  background: var(--surface); border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border-radius: 4px 18px 18px 18px;
+  padding: 13px 15px; font-size: 14px; line-height: 1.75;
+  max-width: 88%; word-break: break-word; color: var(--text);
+}
+.dump-msg-ai .ai-name {
+  font-size: 9px; font-weight: 700; color: var(--accent);
+  margin-bottom: 7px; letter-spacing: 1.5px; text-transform: uppercase;
+}
+.dump-msg-meta {
+  align-self: flex-start;
+  background: var(--accent-dim); border: 1px solid var(--accent-glow);
+  border-radius: 10px; padding: 7px 13px;
+  font-size: 12px; color: var(--accent); font-weight: 600;
+}
+.dump-input-bar {
+  padding: 10px 14px;
+  padding-bottom: calc(10px + var(--inset-bot));
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex; gap: 10px; align-items: flex-end;
+}
+.dump-input-ta {
+  flex: 1; background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 20px; color: var(--text);
+  font-size: 15px; line-height: 1.6; padding: 10px 16px;
+  outline: none; resize: none; overflow: hidden;
+  font-family: inherit; min-height: 42px; max-height: 140px;
+  transition: border-color 0.2s;
+}
+.dump-input-ta:focus { border-color: var(--accent); }
+.dump-input-ta::placeholder { color: var(--muted); }
+.dump-send-btn {
+  width: 42px; height: 42px; border-radius: 50%;
+  border: none; background: var(--accent); color: #fff;
+  font-size: 18px; font-weight: 700; cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s, opacity 0.15s;
+}
+.dump-send-btn:active { transform: scale(0.9); opacity: 0.8; }
+.dump-send-btn:disabled { opacity: 0.25; }
+.dump-typing {
+  align-self: flex-start;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 4px 18px 18px 18px;
+  padding: 14px 18px;
+}
+
+/* ═══════════════════════════════════
+   VIEW 2: 오늘
+═══════════════════════════════════ */
+#v-today { background: var(--bg); }
+.today-scroll { flex: 1; overflow-y: auto; padding: 16px 16px 24px; -webkit-overflow-scrolling: touch; }
+.today-scroll::-webkit-scrollbar { display: none; }
+.sec-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.task-cnt {
+  background: var(--accent); color: #fff;
+  border-radius: 100px; padding: 2px 9px;
+  font-size: 11px; font-weight: 700; margin-left: 6px;
+}
+.divider { height: 8px; background: var(--bg); margin: 8px -16px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+
+.task-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 15px 16px; margin-bottom: 10px;
+  display: flex; align-items: flex-start; gap: 12px;
+  transition: border-color 0.15s; position: relative;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.task-card.urgent { border-left: 2px solid var(--red); }
+.task-card.done-card { opacity: 0.35; }
+.task-chk {
+  width: 20px; height: 20px; flex-shrink: 0;
+  border: 1.5px solid var(--border2); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; margin-top: 2px;
+}
+.task-chk.on { background: var(--accent); border-color: var(--accent); }
+.task-chk.on::after { content:"✓"; color:#fff; font-size:12px; font-weight:900; }
+.task-body { flex: 1; min-width: 0; }
+.task-txt { font-size: 15px; line-height: 1.5; color: var(--text); font-weight: 500; }
+.task-txt.done { text-decoration: line-through; color: var(--muted); font-weight: 400; }
+.task-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+.tbadge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 100px; }
+.tbadge-urg { background: var(--red-dim); color: var(--red); }
+.tbadge-when { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+.task-card-actions { position:absolute; top:10px; right:10px; display:flex; gap:6px; align-items:center; opacity:0.15; transition:opacity 0.2s; }
+.task-card:active .task-card-actions { opacity: 1; }
+.task-act-btn {
+  font-size: 11px; padding: 3px 8px; border-radius: 8px;
+  border: 1px solid var(--border2); background: var(--surface2);
+  color: var(--text2); transition: all 0.15s; font-weight: 600; border-radius: 100px;
+}
+
+.sched-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 15px 16px; margin-bottom: 10px;
+  display: flex; gap: 14px; position: relative;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.sched-time { font-size: 13px; font-weight: 700; color: var(--accent); min-width: 44px; padding-top: 2px; flex-shrink: 0; }
+.sched-txt { font-size: 15px; color: var(--text); line-height: 1.45; font-weight: 500; }
+.sched-note { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+/* ═══════════════════════════════════
+   VIEW 3: 메모
+═══════════════════════════════════ */
+#v-memo { background: var(--bg); }
+.memo-hdr {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 14px 16px; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.memo-hdr-top { display: flex; align-items: center; justify-content: space-between; }
+.memo-title { font-size: 17px; font-weight: 700; }
+.memo-search-wrap { position: relative; }
+.memo-search {
+  border: 1.5px solid var(--border2); border-radius: 100px;
+  padding: 7px 14px 7px 30px; font-size: 13px;
+  outline: none; background: var(--surface2); color: var(--text);
+  width: 120px; transition: width 0.2s, border-color 0.2s;
+}
+.memo-search:focus { width: 150px; border-color: var(--accent); }
+.memo-search::placeholder { color: var(--muted); }
+.memo-search-ico { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 11px; pointer-events: none; color: var(--muted); }
+.memo-scroll { flex: 1; overflow-y: auto; padding: 12px 16px; -webkit-overflow-scrolling: touch; }
+.memo-scroll::-webkit-scrollbar { display: none; }
+.tag-cloud { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; overflow: hidden; max-height: calc((28px + 6px) * 3); }
+.tag-chip {
+  padding: 5px 12px; border-radius: 100px; font-size: 12px; font-weight: 500;
+  background: var(--surface); border: 1.5px solid var(--border2); color: var(--text2);
+  cursor: pointer; transition: all 0.15s; height: 28px; display: inline-flex; align-items: center;
+}
+.tag-chip.on { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); font-weight: 700; }
+
+.memo-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 16px; margin-bottom: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  transition: border-color 0.15s; position: relative; z-index: 1;
+}
+.memo-cat {
+  font-size: 11px; font-weight: 700; color: var(--muted);
+  margin-bottom: 7px; display: flex; align-items: center; justify-content: space-between;
+  letter-spacing: 0.5px; text-transform: uppercase;
+}
+.memo-txt { font-size: 14px; color: var(--text); line-height: 1.65; }
+.memo-edit-ta {
+  width: 100%; border: 1px solid var(--accent); border-radius: 10px;
+  padding: 10px 12px; font-size: 14px; outline: none; background: var(--surface2);
+  color: var(--text); line-height: 1.65; min-height: 80px;
+}
+.memo-foot { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.memo-tag {
+  font-size: 11px; color: var(--muted); background: var(--surface2);
+  padding: 2px 8px; border-radius: 8px; font-weight: 500;
+}
+
+/* ═══════════════════════════════════
+   VIEW 4: 문서
+═══════════════════════════════════ */
+#v-docs { background: var(--bg); }
+.docs-secbar {
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  display: flex; overflow-x: auto; padding: 10px 12px 0; gap: 4px;
+  align-items: flex-end; flex-shrink: 0;
+}
+.docs-secbar::-webkit-scrollbar { display: none; }
+.sec-tab {
+  padding: 7px 14px; border-radius: 8px 8px 0 0;
+  border: 1px solid transparent; background: transparent;
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+  color: var(--muted); cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+}
+.sec-tab.on { background: var(--surface); border-color: var(--border); border-bottom-color: var(--surface); color: var(--text); margin-bottom: -1px; padding-bottom: 8px; }
+.docs-add-sec {
+  padding: 6px 10px; border-radius: 8px 8px 0 0; border: 1px dashed var(--border2);
+  background: transparent; color: var(--muted); font-size: 13px; cursor: pointer; flex-shrink: 0;
+}
+.docs-new-btn {
+  width: 100%; padding: 14px; border: none; background: var(--surface);
+  color: var(--accent); font-size: 14px; font-weight: 700;
+  border-bottom: 1px solid var(--border); display: flex;
+  align-items: center; justify-content: center; gap: 6px; flex-shrink: 0;
+}
+.docs-page-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.docs-page-list::-webkit-scrollbar { display: none; }
+.doc-item {
+  padding: 16px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+  background: transparent; cursor: pointer; transition: background 0.15s;
+}
+.doc-item:active { background: var(--surface); }
+.doc-item.on { background: var(--surface); border-left: 2px solid var(--accent); }
+.doc-item-info { flex: 1; min-width: 0; }
+.doc-item-title { font-size: 15px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.doc-item-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.doc-item-arr { font-size: 16px; color: var(--muted); }
+
+/* 에디터 */
+.editor-screen {
+  position: fixed; inset: 0; padding-top: var(--inset-top);
+  background: var(--bg); z-index: 300; display: none; flex-direction: column;
+  transform: translateX(100%); transition: transform 0.25s ease;
+}
+.editor-screen.open { display: flex; transform: translateX(0); animation: slideIn 0.25s ease; }
+@keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+.editor-topbar {
+  display: flex; align-items: center; padding: 12px 16px; gap: 10px;
+  border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--bg);
+}
+.editor-back { border: none; background: none; font-size: 22px; color: var(--accent); padding: 4px; }
+.editor-title { flex: 1; border: none; outline: none; font-size: 16px; font-weight: 700; color: var(--text); background: transparent; }
+.editor-save { padding: 8px 16px; border-radius: 10px; border: none; background: var(--accent); color: #fff; font-size: 13px; font-weight: 700; }
+.editor-fmt {
+  display: flex; gap: 1px; padding: 6px 12px; overflow-x: auto;
+  border-bottom: 1px solid var(--border); background: var(--bg2); flex-shrink: 0;
+}
+.editor-fmt::-webkit-scrollbar { display: none; }
+.fmt-btn {
+  width: 32px; height: 30px; border-radius: 6px; border: none;
+  background: transparent; font-size: 13px; color: var(--text2); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.fmt-btn:active { background: var(--surface2); }
+.fmt-sep { width: 1px; background: var(--border); margin: 4px 3px; flex-shrink: 0; }
+.editor-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+#docEditor {
+  outline: none; min-height: 400px; padding: 18px 18px 60px;
+  font-size: 15px; line-height: 1.95; color: var(--text); font-family: "Noto Sans KR", sans-serif;
+}
+#docEditor:empty::before { content: attr(data-ph); color: var(--muted); pointer-events: none; display: block; }
+
+/* ═══════════════════════════════════
+   VIEW 5: 목표
+═══════════════════════════════════ */
+#v-more { background: var(--bg); }
+.more-scroll { flex: 1; overflow-y: auto; padding: 16px 16px 24px; -webkit-overflow-scrolling: touch; }
+.more-scroll::-webkit-scrollbar { display: none; }
+
+.goal-item {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 18px 18px 16px; margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  position: relative; overflow: hidden;
+}
+.goal-item::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 4px; background: var(--accent); border-radius: 0;
+}
+.goal-item-type {
+  font-size: 11px; font-weight: 700; color: var(--accent);
+  text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px;
+}
+.goal-item-txt { font-size: 17px; font-weight: 700; color: var(--text); line-height: 1.4; margin-bottom: 6px; }
+.goal-item-meta { font-size: 12px; color: var(--muted); }
+.goal-item-why { font-size: 13px; color: var(--text2); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); line-height: 1.6; }
+.goal-dday {
+  display: inline-block; font-size: 13px; font-weight: 800;
+  padding: 3px 10px; border-radius: 100px;
+  background: var(--accent-dim); color: var(--accent); margin-left: 6px;
+}
+.goal-del-btn { float: right; background: none; border: none; color: var(--muted); font-size: 14px; line-height: 1; opacity: 0.4; }
+.goal-del-btn:active { opacity: 1; color: var(--red); }
+
+.gfilter-row { display: flex; gap: 5px; flex-wrap: wrap; }
+.gfilter-btn {
+  padding: 6px 14px; border-radius: 100px; border: 1.5px solid var(--border2);
+  background: transparent; color: var(--muted); font-size: 11px; font-weight: 600;
+}
+.gfilter-btn.on { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+
+.goal-input { width:100%; border: 1px solid var(--border2); border-radius: 12px; padding: 12px 14px; font-size: 14px; outline: none; background: var(--surface); color: var(--text); transition: border-color 0.2s; }
+.goal-input:focus { border-color: var(--accent); }
+.goal-why { width: 100%; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-size: 13px; outline: none; background: var(--surface); color: var(--text); }
+.goal-why:focus { border-color: var(--accent); }
+.goal-date-row { display: flex; gap: 6px; }
+.goal-sel { flex: 1; border: 1px solid var(--border); border-radius: 10px; padding: 9px 4px; font-size: 12px; outline: none; background: var(--surface); color: var(--text); text-align: center; appearance: none; -webkit-appearance: none; }
+.goal-sel:focus { border-color: var(--accent); }
+
+/* 일기 */
+.more-card { background: var(--surface); border-radius: 16px; border: 1px solid var(--border); margin-bottom: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.more-card-hdr { padding: 14px 16px; font-size: 14px; font-weight: 700; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.more-card-body { padding: 14px 16px; }
+.diary-wrap { font-size: 13px; line-height: 1.85; color: var(--text2); }
+.diary-section { margin-bottom: 14px; }
+.diary-section-title { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
+.diary-gen-btn { padding: 7px 16px; border-radius: 20px; border: 1px solid var(--border2); background: var(--surface2); color: var(--text2); font-size: 12px; font-weight: 600; }
+.hist-item { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text2); cursor: pointer; }
+.hist-item:last-child { border-bottom: none; }
+.hist-date { font-size: 11px; font-weight: 700; color: var(--accent); margin-bottom: 3px; font-family: 'JetBrains Mono', monospace; }
+.hist-preview { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ═══════════════════════════════════
+   MEMO CHAT MODAL
+═══════════════════════════════════ */
+#chatOverlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.3); z-index: 400;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+#memoChatModal {
+  display: none; position: fixed;
+  left: 0; right: 0; bottom: 0;
+  top: calc(var(--inset-top) + 60px);
+  background: var(--surface); z-index: 500;
+  flex-direction: column; border-radius: 20px 20px 0 0;
+  box-shadow: 0 -4px 32px rgba(0,0,0,0.1);
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+}
+#memoChatModal.open { display: flex; transform: translateY(0); animation: chatSlide 0.3s cubic-bezier(0.32,0.72,0,1) forwards; }
+@keyframes chatSlide { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.chat-hdr {
+  display: flex; align-items: center; padding: 14px 16px; gap: 10px;
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.chat-hdr-ico {
+  width: 32px; height: 32px; flex-shrink: 0;
+  background: var(--accent-dim); border: 1px solid var(--accent-glow);
+  border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 15px;
+}
+.chat-hdr-info { flex: 1; min-width: 0; }
+.chat-hdr-title { font-size: 13px; font-weight: 700; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-hdr-sub { font-size: 11px; color: var(--muted); }
+.chat-save-btn { padding: 6px 12px; border-radius: 20px; border: 1px solid var(--accent-glow); background: var(--accent-dim); color: var(--accent); font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.chat-close-btn { background: none; border: none; color: var(--muted); font-size: 22px; flex-shrink: 0; line-height: 1; padding: 2px; }
+#memoChatMessages { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; -webkit-overflow-scrolling: touch; }
+#memoChatMessages::-webkit-scrollbar { display: none; }
+.chat-bubble { max-width: 82%; padding: 10px 13px; border-radius: 16px; font-size: 13px; line-height: 1.65; word-break: break-word; }
+.bubble-ai { background: var(--surface2); border: 1px solid var(--border); color: var(--text2); align-self: flex-start; border-bottom-left-radius: 4px; }
+.bubble-user { background: var(--text); color: #ffffff; align-self: flex-end; border-bottom-right-radius: 4px; }
+.chat-input-bar { display: flex; gap: 8px; align-items: flex-end; padding: 12px 14px; border-top: 1px solid var(--border); flex-shrink: 0; padding-bottom: calc(12px + var(--inset-bot)); background: var(--surface); }
+#memoChatInput { flex: 1; border-radius: 22px; padding: 11px 16px; font-size: 15px; min-height: 44px; max-height: 120px; background: var(--surface2); border: 1.5px solid var(--border2); outline: none; color: var(--text); transition: border-color 0.2s; resize: none; font-family: inherit; line-height: 1.5; }
+#memoChatInput:focus { border-color: var(--accent); background: var(--surface); }
+#memoChatSendBtn { width: 44px; height: 44px; border-radius: 50%; border: none; background: var(--accent); color: #fff; font-size: 18px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; }
+
+/* ═══════════════════════════════════
+   PROFILE MODAL
+═══════════════════════════════════ */
+.prof-input {
+  width: 100%; background: var(--surface2);
+  border: 1.5px solid var(--border2);
+  border-radius: 14px; padding: 14px 16px; font-size: 16px; color: var(--text);
+  outline: none; font-family: inherit; transition: border-color 0.2s; line-height: 1.6;
+}
+.prof-input:focus { border-color: var(--accent); background: var(--surface); }
+.prof-label { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 8px; }
+
+/* ── TOAST ── */
+@keyframes toastIn { from { opacity:0; transform:translateX(-50%) translateY(10px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+
+/* ── AI BUBBLES ── */
+.ai-bubble { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; font-size: 13px; line-height: 1.8; color: var(--text2); }
+.ai-lbl { font-size: 9px; font-weight: 700; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
+
+/* 숨김 호환 */
+#tagReviewPanel, #tagExpandBtn, #memoCatFilter { display: none !important; }
+.doc-list-item, .doc-list-title, .doc-list-date { display: none; }
+#docFormatBar, #docToolbar, #docEmptyState, #docMetaBar { display: none !important; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="views">
+
+    <!-- ① 브레인덤프 -->
+    <div class="view active" id="v-dump">
+      <div id="dumpSplash">
+        <button onclick="openProfile()" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:18px;cursor:pointer;opacity:0.25;padding:8px;z-index:10;color:var(--text)">⚙</button>
+        <div class="splash-brain">🧠</div>
+        <div class="splash-bubble-wrap" id="splashBubbleWrap">
+          <div class="splash-bubble" id="splashBubble">
+            <textarea id="splashInput" class="splash-ta"
+              placeholder="지금 머릿속에 있는 거 다 쏟아내봐&#10;할 일, 걱정, 아이디어, 뭐든"
+              oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,200)+'px'"
+              onfocus="document.getElementById('splashBubbleWrap').classList.add('focused');document.getElementById('splashBubble').classList.add('active')"
+              onblur="document.getElementById('splashBubbleWrap').classList.remove('focused');document.getElementById('splashBubble').classList.remove('active')"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();startDumpChat()}"></textarea>
+            <div class="splash-footer">
+              <span class="splash-hint">Enter · AI가 정리해줄게</span>
+              <div style="display:flex;gap:6px;align-items:center">
+                <button onclick="triggerPhotoInput('splash')" title="사진 첨부" style="width:34px;height:34px;border-radius:50%;border:none;background:var(--surface3);color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">📷</button>
+                <button onclick="startVoiceInput('splash')" id="voiceBtn-splash" title="음성 입력" style="width:34px;height:34px;border-radius:50%;border:none;background:var(--surface3);color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">🎙</button>
+                <button class="splash-send" onclick="startDumpChat()">↑</button>
+              </div>
+            </div>
+            <div id="splashPhotoPreview" style="display:none;padding:8px 0 0;display:flex;gap:6px;flex-wrap:wrap"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="dumpChat" style="display:none;flex-direction:column;flex:1;min-height:0">
+
+        <!-- 상단: 대화 (60%) -->
+        <div id="dumpPanel-chat" style="display:flex;flex-direction:column;flex:6;min-height:0;border-bottom:1px solid var(--border)">
+          <div class="dump-chat-messages" id="dumpMessages"></div>
+          <div class="dump-input-bar">
+            <div style="display:flex;flex-direction:column;flex:1;gap:6px">
+              <div id="chatPhotoPreview" style="display:none;gap:6px;flex-wrap:wrap"></div>
+              <div style="display:flex;gap:8px;align-items:flex-end">
+                <textarea id="brainInput" class="dump-input-ta" rows="1"
+                  placeholder="더 쏟아내..."
+                  oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,140)+'px';clearTimeout(window._dumpResetTimer);"
+                  onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();runBrainDump()}"></textarea>
+                <div style="display:flex;gap:5px;flex-shrink:0;align-items:flex-end;padding-bottom:1px">
+                  <button onclick="triggerPhotoInput('chat')" title="사진" style="width:36px;height:36px;border-radius:50%;border:none;background:var(--surface3);color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">📷</button>
+                  <button onclick="startVoiceInput('chat')" id="voiceBtn-chat" title="음성" style="width:36px;height:36px;border-radius:50%;border:none;background:var(--surface3);color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">🎙</button>
+                  <button class="dump-send-btn" id="dumpSendBtn" onclick="runBrainDump()">↑</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 드래그 핸들 -->
+        <div id="splitHandle" style="height:22px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:row-resize;flex-shrink:0;user-select:none"
+          onpointerdown="startSplitDrag(event)">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:32px;height:3px;background:var(--border2);border-radius:2px"></div>
+            <span style="font-size:10px;color:var(--muted);font-weight:600">🗺 마인드맵</span>
+            <div style="width:32px;height:3px;background:var(--border2);border-radius:2px"></div>
+          </div>
+        </div>
+
+        <!-- 하단: 마인드맵 (40%) -->
+        <div id="dumpPanel-map" style="display:flex;flex-direction:column;flex:4;min-height:100px;position:relative;background:var(--surface2)">
+          <div id="mindmapEmpty" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--muted);padding:16px">
+            <div style="font-size:32px;opacity:0.25">🗺</div>
+            <div style="font-size:12px;text-align:center;line-height:1.6">위에서 생각 입력하면<br>마인드맵이 펼쳐져<br><span style="color:var(--accent);font-weight:600">노드 탭 → AI 확장</span></div>
+          </div>
+          <svg id="mindmapSvg" style="flex:1;width:100%;display:none;touch-action:none"></svg>
+          <div id="mindmapLoading" style="display:none;position:absolute;top:8px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);border-radius:100px;padding:6px 14px;font-size:12px;color:var(--text2)" class="loading">
+            <div class="dots"><span></span><span></span><span></span></div>확장 중...
+          </div>
+          <!-- 노드 선택 패널 -->
+          <div id="mindmapNodePanel" style="display:none;position:absolute;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:10px 14px">
+            <div id="mindmapNodeTitle" style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+            <div style="display:flex;gap:6px">
+              <button onclick="expandMindNode()" style="flex:1;padding:8px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🤖 AI 확장</button>
+              <button onclick="addMindNodeToChat()" style="flex:1;padding:8px;border-radius:10px;border:1.5px solid var(--border2);background:transparent;color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit">💬 대화로</button>
+              <button onclick="closeMindNodePanel()" style="padding:8px 12px;border-radius:10px;border:1.5px solid var(--border2);background:transparent;color:var(--muted);font-size:12px;cursor:pointer">✕</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ② 오늘 -->
+    <div class="view" id="v-today">
+      <div class="today-scroll">
+        <div class="sec-hdr">
+          <div class="slabel">할 일 <span class="task-cnt" id="taskCount">0</span></div>
+        </div>
+        <div class="chip-row" style="margin-bottom:16px">
+          <button class="chip on" id="tfilter-today" onclick="filterTasks('today',this)">오늘</button>
+          <button class="chip" id="tfilter-tomorrow" onclick="filterTasks('tomorrow',this)">내일</button>
+          <button class="chip" id="tfilter-week" onclick="filterTasks('week',this)">이번주</button>
+          <button class="chip" id="tfilter-month" onclick="filterTasks('month',this)">이번달</button>
+          <button class="chip" id="tfilter-later" onclick="filterTasks('later',this)">나중에</button>
+        </div>
+        <div id="taskList">
+          <div class="empty"><div class="empty-icon">📋</div><div class="empty-text">브레인덤프하면<br>자동으로 채워짐</div></div>
+        </div>
+        <div class="divider"></div>
+        <div class="slabel" style="margin-bottom:12px">타임라인</div>
+        <div id="scheduleList">
+          <div class="empty"><div class="empty-icon">⏰</div><div class="empty-text">AI가 일정 짜면<br>여기 나타남</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ③ 메모 -->
+    <div class="view" id="v-memo">
+      <div class="memo-hdr">
+        <div class="memo-hdr-top">
+          <div class="memo-title">메모</div>
+          <div class="memo-search-wrap">
+            <span class="memo-search-ico">🔍</span>
+            <input id="tagSearchInput" class="memo-search" placeholder="태그 검색" oninput="filterTagCloud(this.value)">
+          </div>
+        </div>
+        <div class="chip-row" id="memoCatRow">
+          <button class="chip on" onclick="setCatFilter('all',this)">전체</button>
+          <button class="chip" onclick="setCatFilter('💡 아이디어',this)">아이디어</button>
+          <button class="chip" onclick="setCatFilter('💰 돈/투자',this)">투자</button>
+          <button class="chip" onclick="setCatFilter('🔧 사업/운영',this)">사업</button>
+          <button class="chip" onclick="setCatFilter('⚠️ 걱정/리스크',this)">걱정</button>
+          <button class="chip" onclick="setCatFilter('🤝 사람/관계',this)">사람</button>
+          <button class="chip" onclick="setCatFilter('💭 생각/철학',this)">생각</button>
+        </div>
+      </div>
+      <div class="memo-scroll">
+        <div id="memoTagCloud" class="tag-cloud"></div>
+        <div id="memoLoading" style="display:none" class="loading">
+          <div class="dots"><span></span><span></span><span></span></div>분류 중...
+        </div>
+        <div id="memoList">
+          <div class="empty"><div class="empty-icon">🗂️</div><div class="empty-text">브레인덤프 후<br>메모가 쌓임</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ④ 문서 -->
+    <div class="view" id="v-docs">
+      <div class="docs-secbar">
+        <div id="docSectionList" style="display:flex;gap:4px;align-items:flex-end"></div>
+        <button class="docs-add-sec" onclick="newDocSection()">＋</button>
+      </div>
+      <button class="docs-new-btn" onclick="newDoc()">＋ 새 페이지</button>
+      <div class="docs-page-list" id="docsListItems"></div>
+    </div>
+
+    <!-- ⑤ 목표 -->
+    <div class="view" id="v-more">
+      <div class="more-scroll">
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div style="font-size:19px;font-weight:700">🎯 목표</div>
+          <button onclick="toggleGoalForm()" id="goalAddToggle" style="display:flex;align-items:center;gap:5px;padding:8px 16px;border-radius:100px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:700;cursor:pointer">+ 추가</button>
+        </div>
+
+        <div id="goalForm" style="display:none;margin-bottom:14px;background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:16px">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <input id="goalInput" class="goal-input" placeholder="목표를 입력해..." onkeydown="if(event.key==='Enter')addGoal()">
+            <input id="goalWhyInput" class="goal-why" placeholder="왜 중요해? (선택)">
+            <div class="goal-date-row">
+              <select id="goalYear" class="goal-sel"><option value="">년도</option></select>
+              <select id="goalMonth" class="goal-sel"><option value="">월</option></select>
+              <select id="goalDay" class="goal-sel"><option value="">일</option></select>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button onclick="addGoal()" class="btn-main" style="flex:1;padding:12px">저장</button>
+            <button onclick="toggleGoalForm()" class="btn-ghost" style="padding:12px 16px">취소</button>
+          </div>
+        </div>
+
+        <div id="goalList"></div>
+
+        <div class="more-card">
+          <div class="more-card-hdr">
+            <span>오늘 일기</span>
+            <button class="diary-gen-btn" onclick="generateDiary()">✍️ 생성</button>
+          </div>
+          <div class="more-card-body">
+            <div id="diaryLoading" style="display:none" class="loading">
+              <div class="dots"><span></span><span></span><span></span></div>일기 쓰는 중...
+            </div>
+            <div id="diaryContent">
+              <div class="empty" style="padding:16px 0">
+                <div class="empty-icon">📓</div>
+                <div class="empty-text">하루 끝나고 생성 누르면<br>AI가 일기 써줌</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="more-card">
+          <div class="more-card-hdr"><span>히스토리</span></div>
+          <div class="more-card-body">
+            <div id="historyList">
+              <div class="empty" style="padding:10px 0">
+                <div class="empty-text">일기 생성하면 여기 저장됨</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /views -->
+
+  <!-- 하단 탭바 -->
+  <div class="bnav">
+    <button class="bnav-btn on" id="bnav-dump" onclick="switchView('dump',this)">
+      <div class="bnav-badge"></div>
+      <div class="bnav-icon">🧠</div>
+      <div class="bnav-lbl">덤프</div>
+    </button>
+    <button class="bnav-btn" id="bnav-today" onclick="switchView('today',this)">
+      <div class="bnav-badge"></div>
+      <div class="bnav-icon">📋</div>
+      <div class="bnav-lbl">오늘</div>
+    </button>
+    <button class="bnav-btn" id="bnav-memo" onclick="switchView('memo',this)">
+      <div class="bnav-badge"></div>
+      <div class="bnav-icon">🗂️</div>
+      <div class="bnav-lbl">메모</div>
+    </button>
+    <button class="bnav-btn" id="bnav-more" onclick="switchView('more',this)">
+      <div class="bnav-badge"></div>
+      <div class="bnav-icon">🎯</div>
+      <div class="bnav-lbl">목표</div>
+    </button>
+    <button class="bnav-btn" id="bnav-docs" onclick="switchView('docs',this)">
+      <div class="bnav-badge"></div>
+      <div class="bnav-icon">📄</div>
+      <div class="bnav-lbl">문서</div>
+    </button>
+  </div>
+
+<!-- 숨김 파일 입력 -->
+<input type="file" id="photoFileInput" accept="image/*" multiple style="display:none" onchange="handlePhotoInput(this)">
+
+</div><!-- /app -->
+
+<!-- 목표 실행계획 모달 -->
+<div id="goalActionOverlay" onclick="closeGoalAction()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:2000;backdrop-filter:blur(4px)"></div>
+<div id="goalActionModal" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-radius:24px 24px 0 0;z-index:2001;max-height:88vh;overflow-y:auto;border-top:1px solid var(--border)">
+  <div style="padding:20px 20px 0">
+    <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 18px"></div>
+    <div id="goalActionTitle" style="font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px"></div>
+    <div id="goalActionName" style="font-size:18px;font-weight:700;color:var(--text);line-height:1.35;margin-bottom:4px"></div>
+    <div id="goalActionMeta" style="font-size:13px;color:var(--muted);margin-bottom:14px"></div>
+
+    <!-- 진행률 슬라이더 -->
+    <div style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:12px;font-weight:600;color:var(--text2)">진행률</span>
+        <span id="progressLabel" style="font-size:14px;font-weight:800;color:var(--accent)">0%</span>
+      </div>
+      <div style="position:relative;height:28px;display:flex;align-items:center">
+        <div style="position:absolute;left:0;right:0;height:8px;background:var(--surface3);border-radius:100px;overflow:hidden">
+          <div id="progressFill" style="height:100%;background:var(--accent);border-radius:100px;transition:width 0.2s;width:0%"></div>
+        </div>
+        <input type="range" id="goalProgressSlider" min="0" max="100" value="0" step="5"
+          oninput="updateGoalProgress(this.value)"
+          style="position:absolute;left:0;right:0;width:100%;height:28px;opacity:0;cursor:pointer;margin:0;padding:0">
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:18px">
+      <button onclick="generateActionPlan()" id="actionGenBtn" style="padding:10px 16px;border-radius:12px;border:1.5px solid var(--border2);background:transparent;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px">🔄 재생성</button>
+      <button onclick="openGoalChat(currentGoalIdx)" style="padding:10px 14px;border-radius:12px;border:1.5px solid var(--border2);background:transparent;color:var(--text2);font-size:18px;cursor:pointer">💬</button>
+      <div style="flex:1"></div>
+      <button onclick="closeGoalAction()" style="padding:10px 14px;border-radius:12px;border:1.5px solid var(--border2);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;font-family:inherit">닫기</button>
+    </div>
+  </div>
+  <div id="goalActionLoading" style="display:none;padding:20px;justify-content:center" class="loading">
+    <div class="dots"><span></span><span></span><span></span></div>실행계획 짜는 중...
+  </div>
+  <div id="goalActionList" style="padding:0 16px 32px"></div>
+</div>
+
+<!-- 프로필 모달 -->
+<div id="profileOverlay" onclick="closeProfile()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:2000;backdrop-filter:blur(4px)"></div>
+<div id="profileModal" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-radius:24px 24px 0 0;z-index:2001;padding:28px 20px calc(28px + var(--inset-bot));max-height:92vh;overflow-y:auto;border-top:1px solid var(--border)">
+  <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 28px"></div>
+  <div style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px">프로필</div>
+  <div style="font-size:14px;color:var(--muted);margin-bottom:28px">AI가 이 정보를 바탕으로 더 잘 정리해줘</div>
+  <div style="display:flex;flex-direction:column;gap:20px">
+    <div>
+      <div class="prof-label">이름</div>
+      <input id="prof-name" class="prof-input" placeholder="이름">
+    </div>
+    <div>
+      <div class="prof-label">직업 / 하는 일</div>
+      <textarea id="prof-job" rows="4" class="prof-input" placeholder="예: 스타트업 대표, 아프니까사장이다 200만 네이버 카페 운영"></textarea>
+    </div>
+    <div>
+      <div class="prof-label">현재 집중하는 것</div>
+      <textarea id="prof-focus" rows="3" class="prof-input" placeholder="예: 앱 CBT, BTC 투자, 팀 관리"></textarea>
+    </div>
+    <div>
+      <div class="prof-label">AI 말투</div>
+      <textarea id="prof-style" rows="2" class="prof-input" placeholder="예: 직접적으로. 위로 말고 실행 중심"></textarea>
+    </div>
+  </div>
+  <button onclick="saveProfile()" style="width:100%;margin-top:28px;padding:18px;border-radius:16px;border:none;background:var(--accent);color:#fff;font-size:17px;font-weight:700;cursor:pointer;font-family:inherit">저장</button>
+</div>
+
+<!-- 문서 에디터 -->
+<div class="editor-screen" id="docEditorScreen">
+  <div class="editor-topbar">
+    <button class="editor-back" onclick="closeDocEditor()">←</button>
+    <div id="docTitleDisplay" contenteditable="true" class="editor-title"
+      onblur="saveDocTitleInline()"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('docEditor').focus()}"></div>
+    <button class="editor-save" onclick="saveDoc()">저장</button>
+  </div>
+  <div class="editor-fmt">
+    <button class="fmt-btn" onclick="document.execCommand('bold')"><b>B</b></button>
+    <button class="fmt-btn" onclick="document.execCommand('italic')"><i>I</i></button>
+    <button class="fmt-btn" onclick="document.execCommand('underline')"><u>U</u></button>
+    <button class="fmt-btn" onclick="document.execCommand('strikeThrough')"><s>S</s></button>
+    <div class="fmt-sep"></div>
+    <button class="fmt-btn" onclick="document.execCommand('insertUnorderedList')">•≡</button>
+    <button class="fmt-btn" onclick="document.execCommand('insertOrderedList')">1≡</button>
+    <button class="fmt-btn" onclick="document.execCommand('insertHorizontalRule')">—</button>
+    <div class="fmt-sep"></div>
+    <input type="color" value="#00c805" onchange="document.execCommand('foreColor',false,this.value)" style="width:28px;height:28px;border:1px solid var(--border);border-radius:4px;cursor:pointer;padding:1px;background:transparent">
+    <button class="fmt-btn" onclick="deleteDoc()" style="color:var(--red);margin-left:auto">🗑</button>
+  </div>
+  <div class="editor-body">
+    <div id="docEditor" contenteditable="true" data-ph="내용을 입력하세요..." oninput="onDocInput()" onkeydown="handleDocKeydown(event)" spellcheck="false"></div>
+  </div>
+</div>
+
+<!-- 메모 채팅 모달 -->
+<div id="chatOverlay" onclick="closeMemoChat()" style="display:none"></div>
+<div id="memoChatModal" style="display:none">
+  <div class="chat-hdr">
+    <div class="chat-hdr-ico">🤖</div>
+    <div class="chat-hdr-info">
+      <div id="memoChatTitle" class="chat-hdr-title">딥다이브</div>
+      <div id="memoChatTopic" class="chat-hdr-sub">AI 대화</div>
+    </div>
+    <button class="chat-save-btn" onclick="saveMemoChat()">저장</button>
+    <button class="chat-close-btn" onclick="closeMemoChat()">✕</button>
+  </div>
+  <div id="memoChatMessages"></div>
+  <div class="chat-input-bar">
+    <textarea id="memoChatInput" placeholder="질문하거나 생각 이어가기..." rows="1"
+      oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMemoChat()}"></textarea>
+    <button id="memoChatSendBtn" onclick="sendMemoChat()">↑</button>
+  </div>
+</div>
+
+<!-- 숨김 호환 -->
+<select id="memoCatFilter" style="display:none"><option value="all">전체</option></select>
+<div id="tagReviewPanel" style="display:none"><div id="tagReviewItems"></div></div>
+<button id="tagExpandBtn" style="display:none"></button>
+<div id="docFormatBar" style="display:none"></div>
+<div id="docToolbar" style="display:none"></div>
+<div id="docEmptyState" style="display:none"></div>
+<div id="docMetaBar" style="display:none"></div>
+
+<script>
+// ===== GREETING =====
+(function() {
+  const h = new Date().getHours();
+  const greet = h < 12 ? 'GOOD MORNING' : h < 17 ? 'GOOD AFTERNOON' : 'GOOD EVENING';
+  const el = document.getElementById('greetTime');
+  if (el) el.textContent = greet;
+  const prof = JSON.parse(localStorage.getItem('jayProfile') || '{}');
+  const nameEl = document.getElementById('greetName');
+  if (nameEl && prof.name) nameEl.textContent = prof.name + ',';
+})();
+
+// ===== STATE =====
+let currentDate = getTodayKey();
+let allData = JSON.parse(localStorage.getItem('jayDailyOS') || '{}');
+let goals = JSON.parse(localStorage.getItem('jayGoals') || '[]');
+
+function getTodayKey() { return new Date().toISOString().slice(0,10); }
+function formatDate(key) {
+  const d = new Date(key + 'T00:00:00');
+  return d.toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
+}
+function getDay(data, key) {
+  if (!data[key]) data[key] = { tasks:[], schedule:[], dumps:[], diary:'', report:'' };
+  return data[key];
+}
+function save() {
+  localStorage.setItem('jayDailyOS', JSON.stringify(allData));
+  localStorage.setItem('jayGoals', JSON.stringify(goals));
+}
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#111;border:1px solid #222;color:#fff;padding:10px 20px;border-radius:24px;font-size:13px;font-weight:600;z-index:9999;animation:toastIn 0.3s ease;white-space:nowrap;letter-spacing:-0.2px';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+// ===== GOALS =====
+let currentGoalFilter = 'all';
+
+function getGoalType(deadline) {
+  if (!deadline) return 'life';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const target = new Date(deadline + (deadline.length === 7 ? '-01' : '') + 'T00:00:00');
+  const days = Math.round((target - today) / (1000*60*60*24));
+  if (days <= 30)  return 'ultra';
+  if (days <= 90)  return 'short';
+  if (days <= 180) return 'mid';
+  if (days <= 365) return 'midlong';
+  return 'long';
+}
+
+const GOAL_TYPE_CONFIG = {
+  life:    { label:'인생', color:'var(--purple)' },
+  ultra:   { label:'초단기', color:'var(--red)' },
+  short:   { label:'단기', color:'var(--accent)' },
+  mid:     { label:'중기', color:'var(--yellow)' },
+  midlong: { label:'중장기', color:'var(--blue)' },
+  long:    { label:'장기', color:'var(--muted)' },
+};
+
+function filterGoals(type, el) {
+  currentGoalFilter = type;
+  document.querySelectorAll('[id^="gfilter-"]').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  renderGoals();
+}
+
+// ===== PROFILE =====
+let userProfile = JSON.parse(localStorage.getItem('jayProfile') || '{}');
+function openProfile() {
+  document.getElementById('prof-name').value = userProfile.name || '';
+  document.getElementById('prof-job').value = userProfile.job || '';
+  document.getElementById('prof-focus').value = userProfile.focus || '';
+  document.getElementById('prof-style').value = userProfile.style || '';
+  document.getElementById('profileOverlay').style.display = 'block';
+  document.getElementById('profileModal').style.display = 'block';
+}
+function closeProfile() {
+  document.getElementById('profileOverlay').style.display = 'none';
+  document.getElementById('profileModal').style.display = 'none';
+}
+function saveProfile() {
+  userProfile = {
+    name: document.getElementById('prof-name').value.trim(),
+    job: document.getElementById('prof-job').value.trim(),
+    focus: document.getElementById('prof-focus').value.trim(),
+    style: document.getElementById('prof-style').value.trim(),
+  };
+  localStorage.setItem('jayProfile', JSON.stringify(userProfile));
+  const nameEl = document.getElementById('greetName');
+  if (nameEl && userProfile.name) nameEl.textContent = userProfile.name + ',';
+  closeProfile();
+  showToast('프로필 저장됨 ✓');
+}
+function getProfileCtx() {
+  if (!userProfile.name && !userProfile.job) return '';
+  let ctx = '\n\n[사용자 프로필]';
+  if (userProfile.name)  ctx += `\n이름: ${userProfile.name}`;
+  if (userProfile.job)   ctx += `\n직업: ${userProfile.job}`;
+  if (userProfile.focus) ctx += `\n현재 집중: ${userProfile.focus}`;
+  if (userProfile.style) ctx += `\nAI 스타일: ${userProfile.style}`;
+  return ctx;
+}
+
+function toggleGoalForm() {
+  const form = document.getElementById('goalForm');
+  const btn = document.getElementById('goalAddToggle');
+  const isOpen = form.style.display !== 'none';
+  form.style.display = isOpen ? 'none' : 'block';
+  btn.textContent = isOpen ? '+ 추가' : '✕ 닫기';
+  btn.style.fontWeight = '700';
+  if (!isOpen) setTimeout(() => document.getElementById('goalInput')?.focus(), 100);
+}
+
+function addGoal() {
+  const text = document.getElementById('goalInput').value.trim();
+  if (!text) return;
+  const why = document.getElementById('goalWhyInput').value.trim();
+  const y = document.getElementById('goalYear').value;
+  const m = document.getElementById('goalMonth').value;
+  const d = document.getElementById('goalDay').value;
+  const deadline = (y && m && d) ? `${y}-${m}-${d}` : (y && m) ? `${y}-${m}` : '';
+  goals.push({ text, why, deadline, createdAt: getTodayKey() });
+  save();
+  document.getElementById('goalInput').value = '';
+  document.getElementById('goalWhyInput').value = '';
+  document.getElementById('goalYear').value = '';
+  document.getElementById('goalMonth').value = '';
+  document.getElementById('goalDay').value = '';
+  document.getElementById('goalForm').style.display = 'none';
+  document.getElementById('goalAddToggle').textContent = '+ 추가';
+  document.getElementById('goalAddToggle').style.fontWeight = '300';
+  renderGoals();
+}
+function removeGoal(i) { goals.splice(i, 1); save(); renderGoals(); }
+
+function updateGoalProgress(val) {
+  goals[currentGoalIdx]._progress = parseInt(val);
+  save();
+  document.getElementById('progressLabel').textContent = val + '%';
+  document.getElementById('progressFill').style.width = val + '%';
+  renderGoals(); // update card
+}
+
+let currentGoalIdx = -1;
+function openGoalAction(i) {
+  currentGoalIdx = i;
+  const g = goals[i];
+  const type = getGoalType(g.deadline);
+  const cfg = GOAL_TYPE_CONFIG[type];
+  const barColor = { life:'#7755cc', ultra:'#e03030', short:'#ff6f0f', mid:'#e07b00', midlong:'#2277dd', long:'#aaaaaa' }[type] || 'var(--accent)';
+  document.getElementById('goalActionTitle').textContent = cfg.label;
+  document.getElementById('goalActionTitle').style.color = barColor;
+  document.getElementById('goalActionName').textContent = g.text;
+  const meta = [g.deadline ? '📅 ' + g.deadline : '', g.deadline ? getDday(g.deadline) : ''].filter(Boolean).join(' ');
+  document.getElementById('goalActionMeta').innerHTML = meta || '';
+  document.getElementById('goalActionList').innerHTML = g._actionPlan
+    ? renderActionItems(g._actionPlan)
+    : '<div class="empty" style="padding:8px 0 24px"><div class="empty-icon">🚀</div><div class="empty-text">아래 버튼으로 AI 실행계획 받아봐</div></div>';
+  const genBtn = document.getElementById('actionGenBtn');
+  if (genBtn) {
+    if (!g._actionPlan) {
+      genBtn.style.background = 'var(--accent)'; genBtn.style.color = '#fff'; genBtn.style.border = 'none'; genBtn.textContent = '🚀 AI 실행계획 만들기'; genBtn.style.flex = '1';
+    } else {
+      genBtn.style.background = 'transparent'; genBtn.style.color = 'var(--text2)'; genBtn.style.border = '1.5px solid var(--border2)'; genBtn.textContent = '🔄 재생성'; genBtn.style.flex = '';
+    }
+  }
+  document.getElementById('goalActionOverlay').style.display = 'block';
+  document.getElementById('goalActionModal').style.display = 'block';
+  // 저장된 진행률 로드
+  const prog = g._progress || 0;
+  document.getElementById('goalProgressSlider').value = prog;
+  document.getElementById('progressLabel').textContent = prog + '%';
+  document.getElementById('progressFill').style.width = prog + '%';
+}
+function closeGoalAction() {
+  document.getElementById('goalActionOverlay').style.display = 'none';
+  document.getElementById('goalActionModal').style.display = 'none';
+}
+function refreshActionList() {
+  const items = goals[currentGoalIdx]?._actionPlan || [];
+  document.getElementById('goalActionList').innerHTML = renderActionItems(items);
+}
+function renderActionItems(items) {
+  const gIdx = currentGoalIdx;
+  const rows = items.map((item, idx) => {
+    if (item._editing) {
+      return `
+      <div style="background:var(--surface);border:1.5px solid var(--accent);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:8px">
+        <input id="ai-text-${idx}" value="${item.text.replace(/"/g,'&quot;')}" style="border:1.5px solid var(--border2);border-radius:10px;padding:10px 12px;font-size:14px;font-family:inherit;outline:none;color:var(--text);background:var(--surface2)" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'" />
+        <input id="ai-note-${idx}" value="${(item.note||'').replace(/"/g,'&quot;')}" placeholder="메모 (선택)" style="border:1.5px solid var(--border2);border-radius:10px;padding:8px 12px;font-size:13px;font-family:inherit;outline:none;color:var(--text2);background:var(--surface2)" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'" />
+        <div style="display:flex;gap:6px">
+          <button onclick="saveActionEdit(${gIdx},${idx})" style="flex:1;padding:9px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">저장</button>
+          <button onclick="cancelActionEdit(${gIdx},${idx})" style="padding:9px 14px;border-radius:10px;border:1.5px solid var(--border2);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;font-family:inherit">취소</button>
+        </div>
+      </div>`;
+    }
+    return `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;box-shadow:0 1px 3px rgba(0,0,0,0.04)">
+      <div onclick="toggleActionItem(${gIdx},${idx})" style="width:22px;height:22px;flex-shrink:0;border:2px solid ${item.done ? 'var(--accent)' : 'var(--border2)'};border-radius:50%;background:${item.done ? 'var(--accent)' : 'transparent'};display:flex;align-items:center;justify-content:center;cursor:pointer;margin-top:2px">
+        ${item.done ? '<span style="color:#fff;font-size:12px;font-weight:900">✓</span>' : ''}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:15px;font-weight:${item.done?'400':'600'};color:${item.done?'var(--muted)':'var(--text)'};text-decoration:${item.done?'line-through':'none'};line-height:1.4">${item.text}</div>
+        ${item.note ? `<div style="font-size:12px;color:var(--text2);margin-top:3px">${item.note}</div>` : ''}
+      </div>
+      <div style="display:flex;gap:4px;flex-shrink:0;align-items:center">
+        <button onclick="startActionEdit(${gIdx},${idx})" title="수정" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center">✏️</button>
+        <button onclick="deleteActionItem(${gIdx},${idx})" title="삭제" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center">🗑</button>
+        <button onclick="addActionToToday(${gIdx},${idx})" title="오늘 추가" style="width:28px;height:28px;border-radius:50%;border:none;background:var(--accent-dim);color:var(--accent);font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">+</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  const addRow = `
+  <div id="actionAddRow" style="display:none;background:var(--surface);border:1.5px solid var(--accent);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;margin-top:4px">
+    <input id="actionNewText" placeholder="새 할일 입력..." style="border:1.5px solid var(--border2);border-radius:10px;padding:10px 12px;font-size:15px;font-family:inherit;outline:none;color:var(--text);background:var(--surface2)" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'" />
+    <input id="actionNewNote" placeholder="메모 (선택)" style="border:1.5px solid var(--border2);border-radius:10px;padding:8px 12px;font-size:13px;font-family:inherit;outline:none;color:var(--text2);background:var(--surface2)" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'" />
+    <div style="display:flex;gap:6px">
+      <button onclick="confirmAddAction(${gIdx})" style="flex:1;padding:10px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">추가</button>
+      <button onclick="document.getElementById('actionAddRow').style.display='none'" style="padding:10px 14px;border-radius:10px;border:1.5px solid var(--border2);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;font-family:inherit">취소</button>
+    </div>
+  </div>`;
+
+  const footer = `
+  <div style="display:flex;gap:8px;margin-top:4px;padding-bottom:8px">
+    <button onclick="showActionAddRow()" style="flex:1;padding:12px;border-radius:14px;border:1.5px dashed var(--border2);background:transparent;color:var(--text2);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">+ 직접 추가</button>
+    <button onclick="addAllToToday(${gIdx})" style="flex:1;padding:12px;border-radius:14px;border:none;background:var(--accent-dim);color:var(--accent);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">📋 오늘에 전체 추가</button>
+  </div>`;
+
+  return `<div style="display:flex;flex-direction:column;gap:8px;padding-bottom:4px">${rows}</div>${addRow}${footer}`;
+}
+function startActionEdit(gIdx, idx) {
+  goals[gIdx]._actionPlan[idx]._editing = true;
+  refreshActionList();
+}
+function cancelActionEdit(gIdx, idx) {
+  delete goals[gIdx]._actionPlan[idx]._editing;
+  refreshActionList();
+}
+function saveActionEdit(gIdx, idx) {
+  const text = document.getElementById(`ai-text-${idx}`)?.value.trim();
+  if (!text) return;
+  const note = document.getElementById(`ai-note-${idx}`)?.value.trim();
+  const done = goals[gIdx]._actionPlan[idx].done;
+  goals[gIdx]._actionPlan[idx] = { text, note, done };
+  save(); refreshActionList();
+}
+function deleteActionItem(gIdx, idx) {
+  goals[gIdx]._actionPlan.splice(idx, 1);
+  save(); refreshActionList(); renderGoals();
+}
+function showActionAddRow() {
+  const row = document.getElementById('actionAddRow');
+  if (row) { row.style.display = 'flex'; row.style.flexDirection = 'column'; document.getElementById('actionNewText')?.focus(); }
+}
+function confirmAddAction(gIdx) {
+  const text = document.getElementById('actionNewText')?.value.trim();
+  if (!text) return;
+  const note = document.getElementById('actionNewNote')?.value.trim() || '';
+  if (!goals[gIdx]._actionPlan) goals[gIdx]._actionPlan = [];
+  goals[gIdx]._actionPlan.push({ text, note, done: false });
+  save(); refreshActionList(); renderGoals();
+}
+function toggleActionItem(goalIdx, itemIdx) {
+  if (!goals[goalIdx]._actionPlan) return;
+  goals[goalIdx]._actionPlan[itemIdx].done = !goals[goalIdx]._actionPlan[itemIdx].done;
+  save(); refreshActionList(); renderGoals();
+}
+function addActionToToday(goalIdx, itemIdx) {
+  const item = goals[goalIdx]._actionPlan[itemIdx];
+  const dk = getTodayKey();
+  if (!allData[dk]) allData[dk] = { tasks:[], schedule:[], dumps:[], diary:'', report:'' };
+  allData[dk].tasks.push({ text: item.text, priority: 2, note: goals[goalIdx].text, when: 'today', urgent: false, done: false });
+  save(); renderTasks(); showToast('오늘 할일에 추가됨 ✓');
+}
+function addAllToToday(goalIdx) {
+  const items = goals[goalIdx]._actionPlan || [];
+  const dk = getTodayKey();
+  if (!allData[dk]) allData[dk] = { tasks:[], schedule:[], dumps:[], diary:'', report:'' };
+  items.filter(i => !i.done).forEach(item => {
+    allData[dk].tasks.push({ text: item.text, priority: 2, note: goals[goalIdx].text, when: 'today', urgent: false, done: false });
+  });
+  save(); renderTasks(); showToast(`${items.filter(i=>!i.done).length}개 추가됨 ✓`); closeGoalAction();
+}
+async function generateActionPlan() {
+  const g = goals[currentGoalIdx];
+  if (!g) return;
+  const btn = document.getElementById('actionGenBtn');
+  const loading = document.getElementById('goalActionLoading');
+  const listEl = document.getElementById('goalActionList');
+  btn.disabled = true; btn.textContent = '생성 중...';
+  loading.style.display = 'flex'; listEl.innerHTML = '';
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514', max_tokens:1000,
+        system:`당신은 JAY의 목표 실행계획 전문가입니다. ${getProfileCtx()}
+JSON만 반환. 설명 없음.
+형식: {"items":[{"text":"할일","note":"간단한 이유나 팁"},...]}
+- 5~8개 구체적 실행 할일
+- 한국어
+- 각 할일은 하루~이틀이면 완료 가능한 크기로 쪼갤 것
+- note는 선택(필요한 경우만, 15자 이내)`,
+        messages:[{role:'user', content:`목표: "${g.text}"\n${g.why ? '이유: ' + g.why : ''}\n${g.deadline ? '마감: ' + g.deadline : ''}\n\n이 목표 달성을 위한 구체적 실행 할일 리스트 만들어줘.`}]
+      })
+    });
+    const d = await resp.json();
+    const txt = d.content?.[0]?.text || '{}';
+    const clean = txt.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(clean);
+    const items = (parsed.items || []).map(it => ({...it, done:false}));
+    goals[currentGoalIdx]._actionPlan = items;
+    save();
+    listEl.innerHTML = renderActionItems(items);
+    // 버튼 → 재생성 모드
+    btn.style.background = 'transparent'; btn.style.color = 'var(--text2)'; btn.style.border = '1.5px solid var(--border2)'; btn.style.flex = '';
+  } catch(e) {
+    listEl.innerHTML = '<div class="empty"><div class="empty-text">생성 실패. 다시 시도해봐</div></div>';
+  }
+  loading.style.display = 'none';
+  btn.disabled = false; btn.textContent = '🔄 다시 생성';
+}
+
+function getDday(deadline) {
+  if (!deadline) return '';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const target = new Date(deadline + 'T00:00:00');
+  const diff = Math.round((target - today) / (1000*60*60*24));
+  if (diff < 0) return `<span class="goal-dday" style="background:rgba(224,48,48,0.1);color:var(--red)">D+${Math.abs(diff)}</span>`;
+  if (diff === 0) return `<span class="goal-dday">D-DAY 🔥</span>`;
+  return `<span class="goal-dday">D-${diff}</span>`;
+}
+function renderGoals() {
+  const el = document.getElementById('goalList');
+  const sorted = [...goals].sort((a,b) => {
+    if (!a.deadline && !b.deadline) return 0;
+    if (!a.deadline) return 1;
+    if (!b.deadline) return -1;
+    return new Date(a.deadline) - new Date(b.deadline);
+  });
+  if (!sorted.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🎯</div><div class="empty-text">아직 목표가 없어<br>+ 추가 눌러서 추가해봐</div></div>';
+    return;
+  }
+  el.innerHTML = sorted.map(g => {
+    const i = goals.indexOf(g);
+    const type = getGoalType(g.deadline);
+    const cfg = GOAL_TYPE_CONFIG[type];
+    const barColor = { life:'#7755cc', ultra:'#e03030', short:'#ff6f0f', mid:'#e07b00', midlong:'#2277dd', long:'#aaaaaa' }[type] || 'var(--accent)';
+    const doneCount = (g._actionPlan || []).filter(a=>a.done).length;
+    const totalCount = (g._actionPlan || []).length;
+    const progressBadge = totalCount ? `<span style="font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-dim);padding:2px 9px;border-radius:100px;margin-left:6px">${doneCount}/${totalCount}</span>` : '';
+    const manualProg = g._progress || 0;
+    const progressBar = manualProg > 0 ? `
+      <div style="margin-top:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+          <span style="font-size:11px;color:var(--muted)">진행률</span>
+          <span style="font-size:12px;font-weight:800;color:${barColor}">${manualProg}%</span>
+        </div>
+        <div style="height:6px;background:var(--surface3);border-radius:100px;overflow:hidden">
+          <div style="height:100%;width:${manualProg}%;background:${barColor};border-radius:100px;transition:width 0.3s"></div>
+        </div>
+      </div>` : '';
+    return `
+    <div class="goal-item" style="border-left:4px solid ${barColor};cursor:pointer" onclick="openGoalAction(${i})">
+      <div class="goal-item-type" style="color:${barColor}">${cfg.label}${progressBadge}</div>
+      <div class="goal-item-txt">${g.text}
+        <button onclick="event.stopPropagation();removeGoal(${i})" class="goal-del-btn">✕</button>
+      </div>
+      ${g.why ? `<div class="goal-item-why">💬 ${g.why}</div>` : ''}
+      <div style="display:flex;align-items:center;gap:8px;margin-top:12px">
+        ${g.deadline ? `<span class="goal-item-meta">📅 ${g.deadline}</span>${getDday(g.deadline)}` : ''}
+      </div>
+      ${progressBar}
+    </div>`;
+  }).join('');
+}
+function editGoal(i) { goals[i]._editing = true; renderGoals(); }
+function cancelEdit(i) { delete goals[i]._editing; renderGoals(); }
+function saveGoal(i) {
+  const text = document.getElementById(`edit-text-${i}`)?.value.trim();
+  if (!text) return;
+  const y = document.getElementById(`edit-y-${i}`).value;
+  const m = document.getElementById(`edit-m-${i}`).value;
+  const d = document.getElementById(`edit-d-${i}`).value;
+  const why = document.getElementById(`edit-why-${i}`).value.trim();
+  goals[i] = { text, why, deadline: (y&&m&&d)?`${y}-${m}-${d}`:(y&&m)?`${y}-${m}`:'', createdAt: goals[i].createdAt };
+  save(); renderGoals();
+}
+function getGoalsContext() {
+  if (!goals.length) return '';
+  return '\n\nJAY의 목표:\n' + goals.map((g,i) => {
+    const dday = g.deadline ? ` (마감: ${g.deadline})` : '';
+    return `${i+1}. ${g.text}${dday}${g.why?' → '+g.why:''}`;
+  }).join('\n');
+}
+
+// ===== HEADER =====
+function updateHeader() {}
+function prevDay() { const d=new Date(currentDate+'T00:00:00'); d.setDate(d.getDate()-1); currentDate=d.toISOString().slice(0,10); updateHeader(); renderAll(); }
+function nextDay() { const d=new Date(currentDate+'T00:00:00'); d.setDate(d.getDate()+1); currentDate=d.toISOString().slice(0,10); updateHeader(); renderAll(); }
+function goToday() { currentDate=getTodayKey(); updateHeader(); renderAll(); }
+
+// ===== TABS =====
+function switchView(view, el) {
+  document.querySelectorAll('.view').forEach(e => { e.classList.remove('active'); e.style.display = 'none'; });
+  document.querySelectorAll('.bnav-btn').forEach(e => e.classList.remove('on'));
+  const vmap = { dump:'v-dump', today:'v-today', memo:'v-memo', docs:'v-docs', more:'v-more' };
+  const viewEl = document.getElementById(vmap[view] || 'v-'+view);
+  if (viewEl) { viewEl.style.display = 'flex'; viewEl.classList.add('active'); }
+  const bnavEl = document.getElementById('bnav-'+view);
+  if (bnavEl) bnavEl.classList.add('on');
+  if (view === 'docs') { renderDocSections(); renderDocsList(); }
+  if (view === 'today') { renderTasks(); renderSchedule(); }
+  if (view === 'memo') { renderMemo(); renderTagCloud(); }
+  if (view === 'more') { renderGoals(); renderHistory(); }
+}
+
+// ===== DOCS =====
+const DEFAULT_SECTIONS = [
+  { id:'invest', name:'💰 투자/BTC', color:'#f0a040' },
+  { id:'biz',    name:'🔧 사업전략', color:'#00c805' },
+  { id:'people', name:'🤝 인사/팀',  color:'#4d9fff' },
+  { id:'idea',   name:'💡 아이디어', color:'#9d7dff' },
+  { id:'misc',   name:'🗒️ 기타',    color:'#555' },
+];
+const CAT_TO_SECTION = { '💰돈/투자':'invest','🔧사업/운영':'biz','🤝사람/관계':'people','💡아이디어':'idea','⚠️걱정/리스크':'biz','💭생각/철학':'misc','📋할일':'misc','🗒️기타':'misc' };
+let docsData = JSON.parse(localStorage.getItem('jayDocs') || '[]');
+let docSectionsData = JSON.parse(localStorage.getItem('jayDocSections') || 'null') || DEFAULT_SECTIONS;
+let currentDocId = null;
+let currentSection = docSectionsData[0]?.id || 'invest';
+function saveDocs() { localStorage.setItem('jayDocs', JSON.stringify(docsData)); }
+function saveSections() { localStorage.setItem('jayDocSections', JSON.stringify(docSectionsData)); }
+
+function renderDocSections() {
+  const el = document.getElementById('docSectionList');
+  el.innerHTML = docSectionsData.map(s => {
+    const isActive = currentSection === s.id;
+    const count = docsData.filter(d => (d.section||'misc') === s.id).length;
+    return `<div onclick="selectSection('${s.id}')" style="padding:7px 14px 8px;border-radius:8px 8px 0 0;cursor:pointer;font-size:12px;font-weight:${isActive?'700':'500'};color:${isActive?s.color:'var(--muted)'};background:${isActive?'var(--surface)':'transparent'};border:1px solid ${isActive?'var(--border)':'transparent'};border-bottom:${isActive?'1px solid var(--surface)':'none'};margin-bottom:${isActive?'-1px':'0'};white-space:nowrap;display:flex;align-items:center;gap:6px;flex-shrink:0">
+      <span>${s.name}</span>${count>0?`<span style="background:rgba(255,255,255,0.06);color:var(--muted);border-radius:10px;padding:1px 6px;font-size:10px">${count}</span>`:''}
+    </div>`;
+  }).join('');
+}
+function selectSection(id) { currentSection = id; renderDocSections(); renderDocsList(); }
+function newDocSection() {
+  const name = prompt('섹션 이름');
+  if (!name) return;
+  const colors = ['#00c805','#4d9fff','#9d7dff','#f0a040','#ff4d4d'];
+  const id = 'sec_' + Date.now();
+  docSectionsData.push({ id, name, color: colors[docSectionsData.length % colors.length] });
+  saveSections(); selectSection(id);
+}
+function renderDocsList() {
+  const el = document.getElementById('docsListItems');
+  if (!el) return;
+  const pages = docsData.filter(d => (d.section||'misc') === currentSection);
+  if (!pages.length) { el.innerHTML = '<div style="padding:24px 16px;font-size:12px;color:var(--muted)">페이지 없음</div>'; return; }
+  el.innerHTML = pages.map(d => `
+    <div class="doc-item ${d.id===currentDocId?'on':''}" onclick="openDoc('${d.id}')">
+      <div class="doc-item-info">
+        <div class="doc-item-title">${d.title||'제목 없음'}</div>
+        <div class="doc-item-meta">${d.fromChat?'🧠 딥다이브 · ':''}${d.updatedAt||d.createdAt||''}</div>
+      </div>
+      <div class="doc-item-arr">›</div>
+    </div>`).join('');
+}
+function openDoc(id) {
+  const doc = docsData.find(d => d.id === id);
+  if (!doc) return;
+  currentDocId = id; renderDocsList();
+  const screen = document.getElementById('docEditorScreen');
+  if (!screen) return;
+  screen.classList.add('open');
+  const titleEl = document.getElementById('docTitleDisplay');
+  if (titleEl) titleEl.textContent = doc.title || '제목 없음';
+  const editorEl = document.getElementById('docEditor');
+  if (editorEl) editorEl.innerHTML = doc.content || '';
+}
+function closeDocEditor() { saveDoc(); document.getElementById('docEditorScreen')?.classList.remove('open'); }
+function saveDocTitleInline() {
+  const doc = docsData.find(d => d.id === currentDocId);
+  if (!doc) return;
+  const newTitle = document.getElementById('docTitleDisplay').textContent.trim();
+  if (newTitle) { doc.title = newTitle; saveDocs(); renderDocsList(); }
+}
+function newDoc() {
+  const doc = { id: Date.now().toString(), title: '새 페이지', content: '', section: currentSection, createdAt: new Date().toISOString().split('T')[0], updatedAt: new Date().toISOString().split('T')[0] };
+  docsData.unshift(doc); saveDocs(); renderDocSections(); renderDocsList(); openDoc(doc.id);
+  setTimeout(() => { const t = document.getElementById('docTitleDisplay'); if(t){t.focus();const r=document.createRange();r.selectNodeContents(t);r.collapse(false);window.getSelection().removeAllRanges();window.getSelection().addRange(r);} }, 100);
+}
+function saveDoc() {
+  const doc = docsData.find(d => d.id === currentDocId);
+  if (!doc) return;
+  const editorEl = document.getElementById('docEditor');
+  const titleEl = document.getElementById('docTitleDisplay');
+  if (editorEl) doc.content = editorEl.innerHTML;
+  if (titleEl) doc.title = titleEl.textContent.trim() || doc.title;
+  doc.updatedAt = new Date().toISOString().split('T')[0];
+  saveDocs(); renderDocSections(); renderDocsList(); showToast('저장 ✓');
+}
+function deleteDoc() {
+  if (!currentDocId) return;
+  if (!confirm('삭제할까요?')) return;
+  docsData = docsData.filter(d => d.id !== currentDocId);
+  currentDocId = null; saveDocs(); renderDocSections(); renderDocsList(); closeDocEditor();
+}
+function editDocTitle() {}
+function onDocInput() {
+  clearTimeout(window._docSaveTimer);
+  window._docSaveTimer = setTimeout(() => {
+    const doc = docsData.find(d => d.id === currentDocId);
+    if (doc) { doc.content = document.getElementById('docEditor').innerHTML; doc.updatedAt = new Date().toISOString().split('T')[0]; saveDocs(); }
+  }, 800);
+}
+function handleDocKeydown(e) { if (e.key === 'Tab') { e.preventDefault(); document.execCommand('insertText', false, '  '); } }
+function saveAsChatDoc(title, htmlContent, tags, memoCat) {
+  const sectionId = CAT_TO_SECTION[memoCat] || 'misc';
+  const doc = { id: Date.now().toString(), title: title||'AI 대화', content: htmlContent, tags: tags||[], section: sectionId, createdAt: new Date().toISOString().split('T')[0], updatedAt: new Date().toISOString().split('T')[0], fromChat: true };
+  docsData.unshift(doc); saveDocs(); renderDocSections(); return doc.id;
+}
+
+function renderAll() { renderTasks(); renderSchedule(); renderMemo(); renderTagCloud(); renderGoals(); renderHistory(); }
+
+let currentTaskFilter = 'today';
+function filterTasks(type, el) {
+  currentTaskFilter = type;
+  document.querySelectorAll('[id^="tfilter-"]').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  renderTasks();
+}
+
+const SNOOZE_ORDER = ['today','tomorrow','week','month','later'];
+const SNOOZE_LABEL = { today:'오늘', tomorrow:'내일', week:'이번주', month:'이번달', later:'나중에' };
+function snoozeTask(i) {
+  const day = getDay(allData, currentDate);
+  const t = day.tasks[i];
+  const cur = t.when || 'today';
+  const idx = SNOOZE_ORDER.indexOf(cur);
+  if (idx < SNOOZE_ORDER.length - 1) { t.when = SNOOZE_ORDER[idx + 1]; save(); renderTasks(); }
+}
+
+function renderTasks() {
+  const day = getDay(allData, currentDate);
+  const el = document.getElementById('taskList');
+  const badge = document.getElementById('taskCount');
+  if (!day.tasks.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">브레인덤프하면<br>자동으로 채워짐</div></div>';
+    badge.textContent = '0'; return;
+  }
+  const filtered = currentTaskFilter === 'all' ? day.tasks : day.tasks.filter(t => (t.when||'today') === currentTaskFilter);
+  badge.textContent = day.tasks.filter(t => !t.done).length;
+  if (!filtered.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">해당 기간 할일 없음</div></div>'; return; }
+  const sorted = [...filtered].sort((a,b) => {
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    if (!!b.urgent !== !!a.urgent) return b.urgent ? 1 : -1;
+    return (a.priority||4) - (b.priority||4);
+  });
+  el.innerHTML = sorted.map(t => {
+    const i = day.tasks.indexOf(t);
+    const cur = t.when || 'today';
+    const canSnooze = cur !== 'later';
+    const nextLabel = canSnooze ? SNOOZE_LABEL[SNOOZE_ORDER[SNOOZE_ORDER.indexOf(cur)+1]] : '';
+    return `
+    <div class="task-card ${t.urgent?'urgent':''} ${t.done?'done-card':''}">
+      <div class="task-card-actions">
+        ${canSnooze ? `<button onclick="snoozeTask(${i})" class="task-act-btn">→ ${nextLabel}</button>` : ''}
+        <button onclick="deleteTask(${i})" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1;padding:2px 4px">✕</button>
+      </div>
+      <div class="task-chk ${t.done?'on':''}" onclick="toggleTask(${i})"></div>
+      <div class="task-body" style="padding-right:90px">
+        <div class="task-txt ${t.done?'done':''}">${t.urgent?'🔥 ':''}${t.text}</div>
+        <div class="task-tags">
+          ${t.urgent ? '<span class="tbadge tbadge-urg">긴급</span>' : ''}
+          ${cur!=='today' ? `<span class="tbadge tbadge-when">${SNOOZE_LABEL[cur]||cur}</span>` : ''}
+          ${t.note ? `<span class="tbadge" style="background:var(--surface2);color:var(--muted)">${t.note}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderSchedule() {
+  const day = getDay(allData, currentDate);
+  const el = document.getElementById('scheduleList');
+  if (!day.schedule.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">⏰</div><div class="empty-text">AI가 일정 짜면<br>여기 나타남</div></div>'; return; }
+  el.innerHTML = day.schedule.map((s,i) => `
+    <div class="sched-card">
+      <button onclick="deleteSchedule(${i})" style="position:absolute;top:10px;right:10px;background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;opacity:0.2;transition:opacity 0.2s;line-height:1" onmousedown="this.style.opacity='1'" ontouchstart="this.style.opacity='1'">✕</button>
+      <div class="sched-time" onclick="toggleTimePicker(${i},this.closest('.sched-card'))" style="cursor:pointer">${s.time}</div>
+      <div style="flex:1;padding-right:20px" onclick="toggleTimePicker(${i},this.closest('.sched-card'))" style="cursor:pointer">
+        <div class="sched-txt">${s.task}</div>
+        ${s.note ? `<div class="sched-note">${s.note}</div>` : ''}
+        <div id="tpicker_${i}" style="display:none;flex-wrap:wrap;gap:5px;margin-top:10px"></div>
+      </div>
+    </div>`).join('');
+}
+
+const TIMES = ['06:00','07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00','23:00'];
+function deleteSchedule(i) { const day = getDay(allData, currentDate); day.schedule.splice(i,1); save(); renderSchedule(); }
+function toggleTimePicker(i, card) {
+  const picker = document.getElementById(`tpicker_${i}`);
+  const day = getDay(allData, currentDate);
+  const cur = day.schedule[i]?.time || '';
+  if (picker.style.display === 'flex') { picker.style.display = 'none'; return; }
+  picker.innerHTML = TIMES.map(t => `<button onclick="event.stopPropagation();setScheduleTime(${i},'${t}')" style="padding:5px 11px;border-radius:20px;border:1px solid ${t===cur?'var(--accent)':'var(--border2)'};background:${t===cur?'var(--accent)':'transparent'};color:${t===cur?'#000':'var(--text2)'};font-size:11px;font-weight:600;cursor:pointer;font-family:'JetBrains Mono',monospace">${t}</button>`).join('');
+  picker.style.display = 'flex';
+}
+function setScheduleTime(i, time) { const day = getDay(allData, currentDate); if (day.schedule[i]) { day.schedule[i].time = time; save(); } renderSchedule(); }
+
+function renderHistory() {
+  const el = document.getElementById('historyList');
+  const keys = Object.keys(allData).filter(k => allData[k].diary).sort().reverse();
+  if (!keys.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">📚</div><div class="empty-text">일기 생성하면<br>여기 저장됨</div></div>'; return; }
+  el.innerHTML = keys.map(k => `
+    <div class="hist-item" onclick="loadHistoryDay('${k}')">
+      <div class="hist-date">${formatDate(k)}</div>
+      <div class="hist-preview">${allData[k].diary.slice(0,80)}...</div>
+    </div>`).join('');
+}
+function loadHistoryDay(key) { currentDate = key; updateHeader(); renderAll(); }
+function toggleTask(i) { const day = getDay(allData, currentDate); day.tasks[i].done = !day.tasks[i].done; save(); renderTasks(); }
+function deleteTask(i) { const day = getDay(allData, currentDate); day.tasks.splice(i,1); save(); renderTasks(); }
+function toggleUrgent(i) { const day = getDay(allData, currentDate); day.tasks[i].urgent = !day.tasks[i].urgent; save(); renderTasks(); }
+
+// ===== AI =====
+async function callClaude(messages, system) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 4000, system, messages })
+  });
+  const data = await res.json();
+  return data.content[0].text;
+}
+
+async function runBrainDump() {
+  const ta = document.getElementById('brainInput');
+  const input = ta.value.trim();
+  if (!input || window._dumpSending) return;
+
+  // ── 유튜브 URL 단독 감지 → Supadata로 자막 자동 추출 ──
+  const ytMatch = input.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/);
+  if (ytMatch && input.split('\n').length <= 2 && input.length < 120) {
+    ta.value = ''; ta.style.height = 'auto';
+    showYoutubeOptions(input, ytMatch[1]);
+    return;
+  }
+
+  // ── 긴 텍스트 + 명령어 감지 (자막 붙여넣기 방식) ──
+  const isTranslateCmd = /번역|translate/i.test(input);
+  const isSummarizeCmd = /요약|summarize|정리/i.test(input);
+  const hasYtUrl = ytMatch !== null;
+
+  window._dumpSending = true;
+  clearTimeout(window._dumpResetTimer);
+  const btn = document.getElementById('dumpSendBtn');
+  btn.disabled = true; ta.value = ''; ta.style.height = 'auto';
+  const msgs = document.getElementById('dumpMessages');
+  const userBubble = document.createElement('div');
+  userBubble.className = 'dump-msg-user'; userBubble.textContent = input; msgs.appendChild(userBubble);
+  const typing = document.createElement('div');
+  typing.className = 'dump-typing'; typing.innerHTML = '<div class="dots"><span></span><span></span><span></span></div>';
+  msgs.appendChild(typing); msgs.scrollTop = msgs.scrollHeight;
+  const day = getDay(allData, currentDate);
+  day.dumps.push({ time: new Date().toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit'}), text: input.slice(0,200) }); save();
+
+  // 번역/요약 명령 분기 (긴 텍스트 or 유튜브 자막)
+  if ((isTranslateCmd || isSummarizeCmd) && input.length > 200) {
+    await runYoutubeTextProcess(input, isTranslateCmd ? 'translate' : 'summarize');
+    btn.disabled = false; window._dumpSending = false;
+    return;
+  }
+
+  const goalsCtx = getGoalsContext();
+  const existingMemos = memoData.slice(0, 20).map(m => ({ id: m.id, category: m.category, text: m.text.slice(0,80), tags: m.tags }));
+  const existingCtx = existingMemos.length ? `\n기존 메모:\n${JSON.stringify(existingMemos)}\n→ 유사 메모는 updateMemoId에 기존 id 넣어서 업데이트.` : '';
+  const system = `당신은 JAY의 개인 AI 비서. JAY는 한국 기업가, 태국 거주, 여러 사업 운영 중.
+친한 친구처럼 자연스럽게 대화해. 먼저 JAY가 한 말에 공감하거나 한마디 던지고, 그 다음 할일/메모 정리해줘.
+${goalsCtx}${existingCtx}${getProfileCtx()}
+
+반드시 아래 JSON만 응답. 다른 텍스트 없이:
+{
+  "reply": "친구처럼 한마디 (구어체, 1-2문장)",
+  "tasks": [{"text":"할일","priority":1,"note":"","when":"today","urgent":false}],
+  "schedule": [{"time":"09:00","task":"할일","note":""}],
+  "memo": [{"category":"💡 아이디어","text":"정리된 생각","tags":["태그1"],"updateMemoId":null}],
+  "focus": "오늘 딱 하나만",
+  "warning": null
+}
+when: "today","tomorrow","week","month","later"
+urgent: true=지금당장
+warning: 마감 임박 등 긴급 상황만, 대부분 null. 하루에 한 번 이미 표시된 경우 null.
+오늘 날짜: ${formatDate(currentDate)}`;
+  try {
+    // 사진 첨부 시 멀티모달 메시지 구성
+    let userContent;
+    if (_attachedPhotos.length) {
+      userContent = [
+        ..._attachedPhotos.map(p => ({ type: 'image', source: { type: 'base64', media_type: p.mime, data: p.base64 } })),
+        { type: 'text', text: input || '이 사진에 대해 할일/메모로 정리해줘' }
+      ];
+      // 사진 미리보기 클리어
+      _attachedPhotos = [];
+      const previewEl = document.getElementById('chatPhotoPreview');
+      if (previewEl) { previewEl.style.display = 'none'; previewEl.innerHTML = ''; }
+    } else {
+      userContent = input;
+    }
+    const raw = await callClaude([{role:'user', content: userContent}], system);
+    const clean = raw.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(clean);
+    day.tasks = (day.tasks||[]).concat(parsed.tasks||[]);
+    day.schedule = parsed.schedule||[];
+    save(); renderTasks(); renderSchedule();
+    if (parsed.memo?.length) {
+      parsed.memo.forEach(item => {
+        if (item.updateMemoId) { const idx = memoData.findIndex(m => m.id == item.updateMemoId); if (idx !== -1) memoData[idx] = { ...memoData[idx], text: item.text, tags: item.tags||[], category: item.category }; }
+        else memoData.unshift({ ...item, tags: item.tags||[], date: currentDate, id: Date.now()+Math.random() });
+      });
+      localStorage.setItem('jayMemo', JSON.stringify(memoData)); renderMemo(); renderTagCloud();
+    }
+    typing.remove();
+    const aiBubble = document.createElement('div'); aiBubble.className = 'dump-msg-ai';
+    let aiText = `<div class="ai-name">JAY AI</div>`;
+    // 경고는 하루 1번만
+    const warnKey = 'jayWarnShown_' + currentDate;
+    if (parsed.warning && !localStorage.getItem(warnKey)) {
+      aiText += `⚠️ ${parsed.warning}<br><br>`;
+      localStorage.setItem(warnKey, '1');
+    }
+    aiText += parsed.reply || '';
+    if (parsed.focus) aiText += `<br><br><span style="color:var(--accent);font-weight:600">→ ${parsed.focus}</span>`;
+    aiBubble.innerHTML = aiText; msgs.appendChild(aiBubble);
+    const taskLen = (parsed.tasks||[]).length, memoLen = (parsed.memo||[]).length;
+    if (taskLen || memoLen) {
+      const meta = document.createElement('div'); meta.className = 'dump-msg-meta';
+      meta.textContent = `할일 ${taskLen}개 · 메모 ${memoLen}개 저장됨`; msgs.appendChild(meta);
+    }
+    msgs.scrollTop = msgs.scrollHeight;
+    // 마인드맵 초기화 (루트 노드 = 입력 텍스트)
+    if (!mindmapData.root) initMindmap(input.slice(0, 30) + (input.length > 30 ? '...' : ''));
+    else if (mindmapData.root) {
+      // 추가 입력 시 루트에 새 자식 추가
+      const colorIdx = mindmapData.root.children.length % MM_COLORS.length;
+      mindmapData.root.children.push({ id: `n_${Date.now()}`, text: input.slice(0,20), color: MM_COLORS[colorIdx], children: [], level: 1 });
+    }
+    clearTimeout(window._dumpResetTimer);
+    window._dumpResetTimer = setTimeout(() => {
+      const ta = document.getElementById('brainInput');
+      if (ta && (ta.value.trim() || document.activeElement === ta)) return; // 타이핑 중이면 스킵
+      document.getElementById('dumpChat').style.display='none';
+      msgs.innerHTML='';
+      document.getElementById('dumpSplash').style.display='flex';
+      document.getElementById('splashInput').value='';
+      mindmapData.root=null;
+    }, 60000);
+  } catch(e) {
+    typing.remove();
+    const errBubble = document.createElement('div'); errBubble.className = 'dump-msg-ai';
+    errBubble.innerHTML = `<div class="ai-name">JAY AI</div>오류가 났어. 다시 해봐 🙏`; msgs.appendChild(errBubble); msgs.scrollTop = msgs.scrollHeight;
+  }
+  btn.disabled = false; window._dumpSending = false;
+}
+
+function startDumpChat() {
+  const ta = document.getElementById('splashInput');
+  const input = ta.value.trim();
+  if (!input && !_attachedPhotos.length) return;
+  // 사진 미리보기 숨기기
+  document.getElementById('splashPhotoPreview').style.display = 'none';
+  document.getElementById('dumpSplash').style.display = 'none';
+  const chat = document.getElementById('dumpChat'); chat.style.display = 'flex';
+  document.getElementById('brainInput').value = input; ta.value = '';
+  // 사진 chat 미리보기로 이동
+  _photoMode = 'chat';
+  if (_attachedPhotos.length) renderPhotoPreview();
+  runBrainDump();
+}
+
+async function generateDiary() {
+  const day = getDay(allData, currentDate);
+  if (!day.tasks.length && !day.dumps.length) { alert('먼저 오늘 할일을 입력해'); return; }
+  document.getElementById('diaryLoading').style.display = 'flex';
+  document.getElementById('diaryContent').innerHTML = '';
+  const done = day.tasks.filter(t=>t.done).length, total = day.tasks.length;
+  const system = `당신은 JAY의 개인 AI 비서. 하루 일기와 리포트 작성.\n반드시 JSON만 응답:\n{"diary":"오늘 하루 일기 (3-4문장, 한국어)","achievements":["완료한 것"],"insights":"패턴/인사이트","tomorrow":"내일 첫번째 할 것","score":0~100}`;
+  const context = `날짜: ${formatDate(currentDate)}\n완료: ${done}/${total}개\n생각: ${day.dumps.map(d=>d.text).join(' | ')}\n할일: ${day.tasks.map(t=>`[${t.done?'완료':'미완'}] ${t.text}`).join(', ')}`;
+  try {
+    const raw = await callClaude([{role:'user', content: context}], system);
+    const p = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    day.diary = p.diary; day.report = JSON.stringify(p); save(); showDiary(day); renderHistory();
+  } catch(e) { document.getElementById('diaryContent').innerHTML = `<div style="color:var(--red);font-size:12px">오류: ${e.message}</div>`; }
+  document.getElementById('diaryLoading').style.display = 'none';
+}
+
+function showDiary(day) {
+  if (!day || !day.diary) return;
+  let p = {};
+  try { p = JSON.parse(day.report); } catch(e) { p = {diary: day.diary}; }
+  const done = (day.tasks||[]).filter(t=>t.done).length, total = (day.tasks||[]).length;
+  document.getElementById('diaryContent').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+      <div style="background:var(--surface2);border-radius:10px;padding:12px 14px;text-align:center">
+        <div style="font-size:20px;font-weight:800;color:var(--text);font-family:'JetBrains Mono',monospace">${done}/${total}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:0.5px">완료율</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:12px 14px;text-align:center">
+        <div style="font-size:20px;font-weight:800;color:var(--accent);font-family:'JetBrains Mono',monospace">${p.score||'-'}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:0.5px">오늘 점수</div>
+      </div>
+    </div>
+    <div class="diary-section"><div class="diary-section-title">일기</div><div class="diary-wrap">${p.diary||day.diary}</div></div>
+    ${p.achievements?.length ? `<div class="diary-section"><div class="diary-section-title">완료한 것</div>${p.achievements.map(a=>`<div class="diary-wrap" style="padding:3px 0">· ${a}</div>`).join('')}</div>` : ''}
+    ${p.insights ? `<div class="diary-section"><div class="diary-section-title">인사이트</div><div class="diary-wrap">${p.insights}</div></div>` : ''}
+    ${p.tomorrow ? `<div class="diary-section"><div class="diary-section-title">내일 첫번째</div><div class="diary-wrap" style="color:var(--accent)">${p.tomorrow}</div></div>` : ''}`;
+}
+
+// ===== MEMO =====
+let memoData = JSON.parse(localStorage.getItem('jayMemo') || '[]');
+
+const CAT_COLORS = {
+  '💡 아이디어':'rgba(157,125,255,0.12)',
+  '📋 할일':'rgba(77,159,255,0.12)',
+  '💰 돈/투자':'rgba(240,192,64,0.12)',
+  '🔧 사업/운영':'rgba(0,200,5,0.1)',
+  '⚠️ 걱정/리스크':'rgba(255,77,77,0.12)',
+  '🤝 사람/관계':'rgba(77,159,255,0.12)',
+  '💭 생각/철학':'rgba(100,100,100,0.15)',
+  '🗒️ 기타':'rgba(80,80,80,0.12)'
+};
+const CAT_TEXT_COLORS = {
+  '💡 아이디어':'var(--purple)',
+  '📋 할일':'var(--blue)',
+  '💰 돈/투자':'var(--yellow)',
+  '🔧 사업/운영':'var(--accent)',
+  '⚠️ 걱정/리스크':'var(--red)',
+  '🤝 사람/관계':'var(--blue)',
+  '💭 생각/철학':'var(--muted)',
+  '🗒️ 기타':'var(--muted)'
+};
+let pendingMemoItems = [];
+
+let activeTagFilter = null;
+function renderTagCloud(searchQuery='') {
+  const el = document.getElementById('memoTagCloud');
+  if (!el) return;
+  const tagCount = {};
+  memoData.forEach(m => (m.tags||[]).forEach(t => { tagCount[t] = (tagCount[t]||0)+1; }));
+  let tags = Object.entries(tagCount).sort((a,b)=>b[1]-a[1]);
+  if (searchQuery) tags = tags.filter(([t]) => t.toLowerCase().includes(searchQuery.toLowerCase()));
+  if (!tags.length) { el.innerHTML=''; return; }
+  el.innerHTML = tags.slice(0,20).map(([t,c]) =>
+    `<span onclick="filterByTag('${t}')" class="tag-chip ${activeTagFilter===t?'on':''}">#${t} <span style="opacity:0.5;font-size:10px">${c}</span></span>`
+  ).join('');
+}
+function filterTagCloud(q) { renderTagCloud(q); }
+
+let activeCatFilter = 'all';
+function setCatFilter(cat, el) {
+  activeCatFilter = cat; activeTagFilter = null;
+  document.querySelectorAll('#memoCatRow .chip').forEach(b => b.classList.remove('on'));
+  if (el) el.classList.add('on');
+  renderMemo(); renderTagCloud();
+}
+function filterByTag(tag) { activeTagFilter = activeTagFilter === tag ? null : tag; renderMemo(); renderTagCloud(); }
+
+function renderMemo() {
+  const el = document.getElementById('memoList');
+  let filtered = memoData.filter(m => !m.isDoc);
+  if (activeCatFilter !== 'all') filtered = filtered.filter(m => m.category === activeCatFilter);
+  if (activeTagFilter) filtered = filtered.filter(m => (m.tags||[]).includes(activeTagFilter));
+  if (!filtered.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">🗂️</div><div class="empty-text">브레인덤프 후<br>메모가 쌓임</div></div>'; return; }
+  el.innerHTML = filtered.map(m => {
+    const realIdx = memoData.indexOf(m);
+    const bg = CAT_COLORS[m.category] || 'rgba(80,80,80,0.12)';
+    const tc = CAT_TEXT_COLORS[m.category] || 'var(--muted)';
+    if (m._editing) return `
+    <div class="memo-card" style="border-color:var(--accent)">
+      <textarea id="memo-edit-${realIdx}" class="memo-edit-ta">${m.text}</textarea>
+      <input id="memo-tags-${realIdx}" value="${(m.tags||[]).join(', ')}" placeholder="태그 (쉼표 구분)" style="width:100%;border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:13px;outline:none;background:var(--surface2);color:var(--text);margin-top:6px;font-family:inherit">
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button onclick="saveMemoEdit(${realIdx})" style="flex:1;padding:10px;border-radius:10px;border:none;background:var(--accent);color:#000;font-size:13px;font-weight:700;cursor:pointer">저장</button>
+        <button onclick="cancelMemoEdit(${realIdx})" style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;cursor:pointer">취소</button>
+      </div>
+    </div>`;
+    return `
+    <div class="memo-card" style="position:relative">
+      <button onclick="deleteMemo(${realIdx})" style="position:absolute;top:10px;right:10px;background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;line-height:1;padding:2px;opacity:0.2;transition:opacity 0.2s" onmousedown="this.style.opacity='1'" ontouchstart="this.style.opacity='1'">✕</button>
+      <div class="memo-cat">
+        <span style="background:${bg};color:${tc};padding:2px 9px;border-radius:6px;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase">${m.category}</span>
+        <div style="display:flex;gap:8px;margin-right:24px">
+          <button onclick="openMemoChat(${realIdx})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px">💬</button>
+          <button onclick="editMemo(${realIdx})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px">✏️</button>
+        </div>
+      </div>
+      <div class="memo-txt">${m.text}</div>
+      ${(m.tags||[]).length ? `<div class="memo-foot">${(m.tags||[]).map(t=>`<span class="memo-tag" onclick="filterByTag('${t}')" style="cursor:pointer">#${t}</span>`).join('')}</div>` : ''}
+      <div style="font-size:10px;color:var(--muted);margin-top:8px;font-family:'JetBrains Mono',monospace">${m.date}</div>
+    </div>`;
+  }).join('');
+}
+
+function editMemo(i) { memoData[i]._editing = true; renderMemo(); }
+function cancelMemoEdit(i) { delete memoData[i]._editing; renderMemo(); }
+function saveMemoEdit(i) {
+  const text = document.getElementById(`memo-edit-${i}`)?.value.trim();
+  const tagsRaw = document.getElementById(`memo-tags-${i}`)?.value.trim();
+  if (text) memoData[i].text = text;
+  memoData[i].tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
+  delete memoData[i]._editing;
+  localStorage.setItem('jayMemo', JSON.stringify(memoData)); renderMemo(); renderTagCloud();
+}
+function deleteMemo(i) { memoData.splice(i,1); localStorage.setItem('jayMemo', JSON.stringify(memoData)); renderMemo(); renderTagCloud(); }
+
+// ===== MEMO CHAT =====
+const memoChatStore = {};
+let memoChatMemoIdx = null;
+let memoChatMode = 'memo'; // 'memo' | 'goal'
+let memoChatGoalIdx = null;
+
+function openGoalChat(gIdx) {
+  const g = goals[gIdx];
+  if (!g) return;
+  memoChatMode = 'goal';
+  memoChatGoalIdx = gIdx;
+  memoChatMemoIdx = null;
+  closeGoalAction();
+  const title = g.text.slice(0,50) + (g.text.length>50?'...':'');
+  const type = getGoalType(g.deadline);
+  const cfg = GOAL_TYPE_CONFIG[type];
+  document.getElementById('memoChatTitle').textContent = title;
+  document.getElementById('memoChatTopic').textContent = `🎯 ${cfg.label}`;
+  const modal = document.getElementById('memoChatModal'); modal.style.display = 'flex'; modal.classList.add('open');
+  document.getElementById('chatOverlay').style.display = 'block';
+  const msgs = document.getElementById('memoChatMessages'); msgs.innerHTML = '';
+  const key = 'goal_' + gIdx;
+  if (memoChatStore[key]?.bubbles?.length) {
+    memoChatStore[key].bubbles.forEach(b => appendChatBubble(b.role, b.text, true));
+  } else {
+    const dday = g.deadline ? ` ${g.deadline}까지 ${getDday(g.deadline).replace(/<[^>]+>/g,'')}` : '';
+    appendChatBubble('ai', `"${g.text}${dday}" 이 목표 어떻게 진행되고 있어? 같이 생각해봐 💬`);
+  }
+  setTimeout(() => { const inp = document.getElementById('memoChatInput'); if (inp) inp.focus(); msgs.scrollTop = msgs.scrollHeight; }, 300);
+}
+
+
+function getChatKey() {
+  if (memoChatMode === 'goal') return 'goal_' + memoChatGoalIdx;
+  const m = memoData[memoChatMemoIdx]; return m?.id || memoChatMemoIdx;
+}
+function getChatSystem() {
+  if (memoChatMode === 'goal') {
+    const g = goals[memoChatGoalIdx];
+    return `JAY의 목표를 함께 생각해줘. 목표: "${g?.text}" ${g?.why?'이유: '+g.why:''} ${g?.deadline?'마감: '+g.deadline:''}\n실행계획: ${(g?._actionPlan||[]).map(a=>a.text).join(', ')}\n짧고 핵심적으로. 실행 중심. 한국어.`;
+  }
+  const m = memoData[memoChatMemoIdx];
+  return `JAY의 메모를 바탕으로 깊이 생각을 확장해줘. 메모: "${m?.text}" (카테고리: ${m?.category})\n태그: ${(m?.tags||[]).join(', ')}\n답변은 간결하되 핵심적으로. 한국어로.`;
+}
+function renderDocText(text) {
+  return text.split('\n').map(line => {
+    if (line.startsWith('# ')) return `<div style="font-size:15px;font-weight:700;color:var(--text);margin:0 0 8px">${line.slice(2)}</div>`;
+    if (line.startsWith('## ')) return `<div style="font-size:12px;font-weight:700;color:var(--accent);margin:10px 0 4px;text-transform:uppercase;letter-spacing:0.5px">${line.slice(3)}</div>`;
+    if (line.startsWith('📌 ')) return `<div style="font-size:13px;color:var(--text2);padding:8px 12px;background:var(--accent-dim);border-radius:8px;border-left:2px solid var(--accent);margin-bottom:4px">${line.slice(3)}</div>`;
+    if (line.startsWith('• ')) return `<div style="font-size:13px;color:var(--text2);padding-left:12px">· ${line.slice(2)}</div>`;
+    if (line.trim() === '') return '<div style="height:4px"></div>';
+    return `<div style="font-size:13px;color:var(--text2);line-height:1.75">${line}</div>`;
+  }).join('');
+}
+
+function openMemoChat(idx) {
+  const m = memoData[idx];
+  if (!m) return;
+  memoChatMode = 'memo';
+  memoChatGoalIdx = null;
+  memoChatMemoIdx = idx;
+  document.getElementById('memoChatTitle').textContent = m.text.slice(0,50) + (m.text.length>50?'...':'');
+  document.getElementById('memoChatTopic').textContent = m.category || 'AI 대화';
+  const modal = document.getElementById('memoChatModal'); modal.style.display = 'flex'; modal.classList.add('open');
+  document.getElementById('chatOverlay').style.display = 'block';
+  const msgs = document.getElementById('memoChatMessages'); msgs.innerHTML = '';
+  const key = m.id || idx;
+  if (memoChatStore[key]?.bubbles?.length) memoChatStore[key].bubbles.forEach(b => appendChatBubble(b.role, b.text, true));
+  else appendChatBubble('ai', `"${m.text.slice(0,60)}..." 이 주제로 같이 생각해봐 💬`);
+  setTimeout(() => { const inp = document.getElementById('memoChatInput'); if (inp) inp.focus(); msgs.scrollTop = msgs.scrollHeight; }, 300);
+}
+function closeMemoChat() { const modal = document.getElementById('memoChatModal'); modal.classList.remove('open'); modal.style.display = 'none'; document.getElementById('chatOverlay').style.display = 'none'; }
+function appendChatBubble(role, text, skipStore = false) {
+  const msgs = document.getElementById('memoChatMessages');
+  const div = document.createElement('div'); div.className = `chat-bubble ${role==='ai'?'bubble-ai':'bubble-user'}`;
+  div.innerHTML = text.replace(/\n/g,'<br>'); msgs.appendChild(div); msgs.scrollTop = msgs.scrollHeight;
+  if (!skipStore) {
+    const key = getChatKey();
+    if (key !== null && key !== undefined) {
+      if (!memoChatStore[key]) memoChatStore[key] = { history:[], bubbles:[] };
+      memoChatStore[key].bubbles.push({ role, text });
+    }
+  }
+}
+function appendTypingIndicator() {
+  const msgs = document.getElementById('memoChatMessages');
+  const div = document.createElement('div'); div.id = 'chatTyping'; div.className = 'chat-bubble bubble-ai';
+  div.innerHTML = '<div class="dots"><span></span><span></span><span></span></div>';
+  msgs.appendChild(div); msgs.scrollTop = msgs.scrollHeight;
+}
+async function sendMemoChat() {
+  const inp = document.getElementById('memoChatInput');
+  const text = inp?.value.trim();
+  if (!text || window._chatSending) return;
+  window._chatSending = true; inp.value = ''; inp.style.height = 'auto';
+  appendChatBubble('user', text); appendTypingIndicator();
+  const key = getChatKey();
+  if (!memoChatStore[key]) memoChatStore[key] = { history:[], bubbles:[] };
+  memoChatStore[key].history.push({ role:'user', content: text });
+  const system = getChatSystem();
+  try {
+    const reply = await callClaude(memoChatStore[key].history, system);
+    document.getElementById('chatTyping')?.remove();
+    memoChatStore[key].history.push({ role:'assistant', content: reply });
+    appendChatBubble('ai', reply);
+  } catch(e) { document.getElementById('chatTyping')?.remove(); appendChatBubble('ai', '오류 발생 🙏'); }
+  window._chatSending = false;
+}
+async function saveMemoChat() {
+  if (window._memoChatSaving) return;
+  window._memoChatSaving = true;
+  const btn = document.querySelector('.chat-save-btn'); if (btn) { btn.textContent = '저장 중...'; btn.disabled = true; }
+  const key = getChatKey();
+  const history = memoChatStore[key]?.history || [];
+  if (!history.length) { showToast('대화 내용이 없어요'); window._memoChatSaving = false; if(btn){btn.textContent='저장';btn.disabled=false;} return; }
+  const isGoal = memoChatMode === 'goal';
+  const contextLabel = isGoal ? `목표: ${goals[memoChatGoalIdx]?.text}` : `메모: ${memoData[memoChatMemoIdx]?.text?.slice(0,60)}`;
+  const section = isGoal ? 'biz' : (memoData[memoChatMemoIdx]?.category === '투자' ? 'invest' : 'idea');
+  const system = `다음 대화를 바탕으로 구조화된 문서. JSON만:\n{"title":"제목","content":"## 핵심\\n📌 포인트1\\n\\n## 결론\\n내용","tags":["태그"]}`;
+  try {
+    const raw = await callClaude([{role:'user', content:`${contextLabel}\n\n대화:\n`+history.map(h=>`${h.role==='user'?'JAY':'AI'}: ${h.content}`).join('\n')}], system);
+    const doc = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    const htmlContent = renderDocText(doc.content||'');
+    saveAsChatDoc(doc.title, htmlContent, doc.tags||[], section);
+    showToast(`"${doc.title}" 저장!`);
+    closeMemoChat();
+    const docsBtn = document.getElementById('bnav-docs'); if (docsBtn) docsBtn.classList.add('has-badge');
+  } catch(e) { appendChatBubble('ai', '저장 오류 🙏'); }
+  if (btn) { btn.textContent = '저장'; btn.disabled = false; }
+  window._memoChatSaving = false;
+}
+
+// ===== 사진 & 음성 입력 =====
+let _photoMode = 'splash'; // 'splash' | 'chat'
+let _attachedPhotos = []; // [{base64, mime}]
+
+function triggerPhotoInput(mode) {
+  _photoMode = mode;
+  document.getElementById('photoFileInput').click();
+}
+
+async function handlePhotoInput(input) {
+  const files = Array.from(input.files);
+  input.value = '';
+  for (const file of files) {
+    const b64 = await new Promise(res => {
+      const r = new FileReader();
+      r.onload = () => res(r.result.split(',')[1]);
+      r.readAsDataURL(file);
+    });
+    _attachedPhotos.push({ base64: b64, mime: file.type, name: file.name });
+  }
+  renderPhotoPreview();
+}
+
+function renderPhotoPreview() {
+  const previewId = _photoMode === 'splash' ? 'splashPhotoPreview' : 'chatPhotoPreview';
+  const el = document.getElementById(previewId);
+  if (!el) return;
+  if (!_attachedPhotos.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = 'flex';
+  el.innerHTML = _attachedPhotos.map((p, i) => `
+    <div style="position:relative;display:inline-block">
+      <img src="data:${p.mime};base64,${p.base64}" style="width:60px;height:60px;object-fit:cover;border-radius:10px;border:1.5px solid var(--border2)">
+      <button onclick="removePhoto(${i})" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;border:none;background:#e03030;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">✕</button>
+    </div>`).join('');
+}
+
+function removePhoto(i) {
+  _attachedPhotos.splice(i, 1);
+  renderPhotoPreview();
+}
+
+// 음성 입력 (Web Speech API)
+let _voiceRecognition = null;
+let _voiceMode = 'splash';
+
+function startVoiceInput(mode) {
+  _voiceMode = mode;
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) { showToast('이 브라우저는 음성 지원 안 됨'); return; }
+
+  const btnId = 'voiceBtn-' + mode;
+  const btn = document.getElementById(btnId);
+
+  if (_voiceRecognition) {
+    _voiceRecognition.stop(); _voiceRecognition = null;
+    if (btn) { btn.style.background = 'var(--surface3)'; btn.textContent = '🎙'; }
+    return;
+  }
+
+  const r = new SpeechRecognition();
+  r.lang = 'ko-KR'; r.continuous = true; r.interimResults = true;
+  _voiceRecognition = r;
+  if (btn) { btn.style.background = '#e03030'; btn.style.color = '#fff'; btn.textContent = '⏹'; }
+
+  r.onresult = (e) => {
+    let final = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript;
+    }
+    if (final) {
+      const taId = mode === 'splash' ? 'splashInput' : 'brainInput';
+      const ta = document.getElementById(taId);
+      if (ta) { ta.value = (ta.value + ' ' + final).trim(); ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 200) + 'px'; }
+    }
+  };
+  r.onerror = () => { showToast('음성 인식 오류'); };
+  r.onend = () => {
+    _voiceRecognition = null;
+    if (btn) { btn.style.background = 'var(--surface3)'; btn.style.color = 'var(--text2)'; btn.textContent = '🎙'; }
+  };
+  r.start();
+  showToast('🎙 음성 인식 중... 다시 누르면 중지');
+}
+
+// ===== 마인드맵 =====
+let mindmapData = { root: null }; // { id, text, color, children:[], x, y }
+let mindmapSelectedNode = null;
+let _mmDrag = null; // pan state
+let _mmOffset = { x: 0, y: 0 };
+let _mmScale = 1;
+
+const MM_COLORS = ['#ff6f0f','#7755cc','#2277dd','#e07b00','#e03030','#00aa66','#c47f00'];
+
+// 스플릿 드래그 핸들
+function startSplitDrag(e) {
+  e.preventDefault();
+  const container = document.getElementById('dumpChat');
+  const chat = document.getElementById('dumpPanel-chat');
+  const map = document.getElementById('dumpPanel-map');
+  const totalH = container.clientHeight - 22; // 22 = handle height
+  const startY = e.clientY;
+  const startChatFlex = chat.style.flex ? parseFloat(chat.style.flex) : 6;
+  const startMapFlex = map.style.flex ? parseFloat(map.style.flex) : 4;
+  const onMove = (ev) => {
+    const dy = ev.clientY - startY;
+    const ratio = dy / totalH;
+    const newChat = Math.max(2, Math.min(8, startChatFlex + ratio * 10));
+    const newMap = 10 - newChat;
+    chat.style.flex = newChat;
+    map.style.flex = newMap;
+    if (mindmapData.root) setTimeout(renderMindmap, 0);
+  };
+  const onUp = () => { document.removeEventListener('pointermove', onMove); document.removeEventListener('pointerup', onUp); };
+  document.addEventListener('pointermove', onMove);
+  document.addEventListener('pointerup', onUp);
+}
+
+function initMindmap(rootText) {
+  mindmapData.root = { id: 'root', text: rootText, color: 'var(--accent)', children: [], level: 0 };
+  _mmOffset = { x: 0, y: 0 }; _mmScale = 1;
+  document.getElementById('mindmapEmpty').style.display = 'none';
+  document.getElementById('mindmapSvg').style.display = 'block';
+  renderMindmap();
+}
+
+function renderMindmap() {
+  const svg = document.getElementById('mindmapSvg');
+  if (!svg || !mindmapData.root) return;
+  const W = svg.clientWidth || 360, H = svg.clientHeight || 500;
+  const cx = W/2 + _mmOffset.x, cy = H/2 + _mmOffset.y;
+
+  // Layout: radial
+  const allNodes = []; const allEdges = [];
+  function layout(node, px, py, angleStart, angleEnd, radius) {
+    node.x = px; node.y = py;
+    allNodes.push(node);
+    if (!node.children.length) return;
+    const step = (angleEnd - angleStart) / node.children.length;
+    node.children.forEach((child, i) => {
+      const angle = angleStart + step * i + step/2;
+      const r = radius;
+      const nx = px + Math.cos(angle) * r;
+      const ny = py + Math.sin(angle) * r;
+      allEdges.push({ x1: px, y1: py, x2: nx, y2: ny, color: child.color });
+      layout(child, nx, ny, angle - Math.PI/3, angle + Math.PI/3, radius * 0.75);
+    });
+  }
+  layout(mindmapData.root, cx, cy, 0, Math.PI*2, 130 * _mmScale);
+
+  svg.innerHTML = `<g id="mmG">` +
+    allEdges.map(e => `<line x1="${e.x1}" y1="${e.y1}" x2="${e.x2}" y2="${e.y2}" stroke="${e.color}" stroke-width="${2*_mmScale}" stroke-opacity="0.5" stroke-dasharray="4 3"/>`).join('') +
+    allNodes.map(n => {
+      const r = n.level===0 ? 42*_mmScale : n.level===1 ? 34*_mmScale : 26*_mmScale;
+      const fs = n.level===0 ? 13*_mmScale : n.level===1 ? 11*_mmScale : 10*_mmScale;
+      const selected = mindmapSelectedNode?.id === n.id;
+      const words = n.text.split(' ');
+      // wrap text into 2 lines max
+      const line1 = words.slice(0, Math.ceil(words.length/2)).join(' ');
+      const line2 = words.length > 1 ? words.slice(Math.ceil(words.length/2)).join(' ') : '';
+      return `<g onclick="selectMindNode('${n.id}')" style="cursor:pointer">
+        <circle cx="${n.x}" cy="${n.y}" r="${r}" fill="${n.color}" fill-opacity="${selected?1:0.15}" stroke="${n.color}" stroke-width="${selected?2.5:1.5}" />
+        <text x="${n.x}" y="${n.y - (line2?fs*0.6:0)}" text-anchor="middle" dominant-baseline="middle" font-size="${fs}" font-weight="600" fill="${selected?'#fff':n.color}" font-family="Noto Sans KR,sans-serif">${line1}</text>
+        ${line2 ? `<text x="${n.x}" y="${n.y+fs*0.9}" text-anchor="middle" dominant-baseline="middle" font-size="${fs}" font-weight="600" fill="${selected?'#fff':n.color}" font-family="Noto Sans KR,sans-serif">${line2}</text>` : ''}
+        ${n.children.length ? `<text x="${n.x}" y="${n.y+r-6*_mmScale}" text-anchor="middle" font-size="${8*_mmScale}" fill="${n.color}" opacity="0.7">+${n.children.length}</text>` : ''}
+      </g>`;
+    }).join('') +
+  `</g>`;
+
+  // pan & pinch
+  svg.onpointerdown = (e) => { _mmDrag = { sx: e.clientX - _mmOffset.x, sy: e.clientY - _mmOffset.y }; };
+  svg.onpointermove = (e) => { if (!_mmDrag) return; _mmOffset.x = e.clientX - _mmDrag.sx; _mmOffset.y = e.clientY - _mmDrag.sy; renderMindmap(); };
+  svg.onpointerup = () => { _mmDrag = null; };
+}
+
+function findNode(id, node) {
+  if (!node) return null;
+  if (node.id === id) return node;
+  for (const c of node.children) { const f = findNode(id, c); if (f) return f; }
+  return null;
+}
+
+function selectMindNode(id) {
+  const node = findNode(id, mindmapData.root);
+  if (!node) return;
+  mindmapSelectedNode = node;
+  renderMindmap();
+  document.getElementById('mindmapNodeTitle').textContent = node.text;
+  document.getElementById('mindmapNodePanel').style.display = 'block';
+}
+
+function closeMindNodePanel() {
+  mindmapSelectedNode = null;
+  document.getElementById('mindmapNodePanel').style.display = 'none';
+  renderMindmap();
+}
+
+async function expandMindNode() {
+  if (!mindmapSelectedNode) return;
+  const loading = document.getElementById('mindmapLoading');
+  loading.style.display = 'flex';
+  document.getElementById('mindmapNodePanel').style.display = 'none';
+  const node = mindmapSelectedNode;
+  const level = node.level || 0;
+  const colorIdx = (MM_COLORS.indexOf(node.color) + 1) % MM_COLORS.length;
+  try {
+    const raw = await callClaude([{role:'user', content:`"${node.text}" 에서 연결되는 아이디어/키워드 4-5개를 JSON으로:\n{"nodes":["키워드1","키워드2","키워드3","키워드4"]}\nJSON만 반환. 한국어.`}],
+      `브레인스토밍 도우미. 핵심 키워드만. JSON만 반환.`);
+    const parsed = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    (parsed.nodes||[]).forEach((text, i) => {
+      node.children.push({ id: `n_${Date.now()}_${i}`, text, color: MM_COLORS[(colorIdx+i)%MM_COLORS.length], children: [], level: level+1 });
+    });
+    renderMindmap();
+  } catch(e) { showToast('확장 실패'); }
+  loading.style.display = 'none';
+}
+
+function addMindNodeToChat(){ 
+  if (!mindmapSelectedNode) return;
+  const ta = document.getElementById('brainInput');
+  ta.value = mindmapSelectedNode.text + '에 대해 더 깊이 생각해봐';
+  ta.focus(); ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px';
+  closeMindNodePanel();
+  // 대화창으로 스크롤
+  const msgs = document.getElementById('dumpMessages');
+  if (msgs) msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ===== 유튜브 처리 (Supadata API) =====
+const SUPADATA_KEY = 'sd_9e0d63e34e4e9c11524c8a8c262a5299';
+
+function showYoutubeOptions(url, videoId) {
+  const msgs = document.getElementById('dumpMessages');
+  if (document.getElementById('dumpChat').style.display === 'none' || !document.getElementById('dumpChat').style.display) {
+    document.getElementById('dumpSplash').style.display = 'none';
+    document.getElementById('dumpChat').style.display = 'flex';
+  }
+  const bubble = document.createElement('div');
+  bubble.className = 'dump-msg-user'; bubble.textContent = url; msgs.appendChild(bubble);
+
+  const guide = document.createElement('div');
+  guide.className = 'dump-msg-ai';
+  guide.innerHTML = `<div class="ai-name">JAY AI</div>
+유튜브 영상 감지됨 🎬<br>뭐 해줄까?
+<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+  <button onclick="fetchAndProcess('${videoId}','summarize')" style="padding:10px 14px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:700;cursor:pointer;text-align:left;font-family:inherit">📝 요약해줘</button>
+  <button onclick="fetchAndProcess('${videoId}','translate')" style="padding:10px 14px;border-radius:12px;border:1.5px solid var(--border2);background:transparent;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;text-align:left;font-family:inherit">🌐 전체 번역해줘</button>
+  <button onclick="fetchAndProcess('${videoId}','bullet')" style="padding:10px 14px;border-radius:12px;border:1.5px solid var(--border2);background:transparent;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;text-align:left;font-family:inherit">🎯 핵심 bullet 정리</button>
+</div>`;
+  msgs.appendChild(guide);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+async function fetchAndProcess(videoId, mode) {
+  const msgs = document.getElementById('dumpMessages');
+  msgs.querySelectorAll('button').forEach(b => b.disabled = true);
+
+  const loading = document.createElement('div');
+  loading.className = 'dump-msg-ai';
+  loading.innerHTML = `<div class="ai-name">JAY AI</div><div class="dots"><span></span><span></span><span></span></div> 자막 추출 중...`;
+  msgs.appendChild(loading); msgs.scrollTop = msgs.scrollHeight;
+
+  const PROXY = 'https://memo-pied-nu.vercel.app/api/transcript';
+  const modeLabel = { summarize:'요약', translate:'번역', bullet:'정리' };
+  const systemMap = {
+    summarize: `유튜브 자막을 분석해서 한국어로 정리해.\n구조:\n# 핵심 요약 (3줄 이내)\n## 주요 내용\n• 포인트 (구체적으로)\n## 인사이트\n• JAY 사업/투자에 유용한 관점\n## 한줄 결론\n자막이 영어면 한국어로 번역해서 요약.`,
+    translate: `유튜브 자막을 자연스러운 한국어로 완전 번역해. 타임스탬프 없애고 문단으로 정리. 전체 내용 빠짐없이.`,
+    bullet: `유튜브 자막에서 핵심 정보만 추출해서 한국어 bullet 리스트로. 실행 가능한 인사이트 위주.`
+  };
+
+  try {
+    // 한국어 자막 먼저 시도
+    let transcript = '';
+    const r1 = await fetch(`${PROXY}?videoId=${videoId}&lang=ko`);
+    if (r1.ok) {
+      const d1 = await r1.json();
+      transcript = (d1.content || []).map(c => c.text).join(' ');
+    }
+    // 없으면 기본(영어) 재시도
+    if (!transcript) {
+      const r2 = await fetch(`${PROXY}?videoId=${videoId}`);
+      if (r2.ok) {
+        const d2 = await r2.json();
+        transcript = (d2.content || []).map(c => c.text).join(' ');
+      }
+    }
+    if (!transcript) throw new Error('자막 없음');
+
+    loading.innerHTML = `<div class="ai-name">JAY AI</div><div class="dots"><span></span><span></span><span></span></div> AI 처리 중...`;
+
+    const raw = await callClaude([{ role:'user', content: `자막:\n${transcript.slice(0, 12000)}` }], systemMap[mode]);
+    loading.remove();
+
+    const result = document.createElement('div');
+    result.className = 'dump-msg-ai';
+    result.innerHTML = `<div class="ai-name">JAY AI · ${modeLabel[mode]}</div>` +
+      raw.replace(/\n/g,'<br>').replace(/#{1,3} (.+?)(<br>|$)/g,'<strong style="color:var(--text);display:block;margin:8px 0 2px">$1</strong>');
+    msgs.appendChild(result);
+
+    const saveRow = document.createElement('div');
+    saveRow.style.cssText = 'display:flex;gap:8px;padding:4px 4px 8px';
+    saveRow.innerHTML = `<button onclick="saveYtToDoc(this)" data-content="${encodeURIComponent(raw)}" data-mode="${mode}" style="padding:8px 14px;border-radius:10px;border:none;background:var(--surface3);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit">📄 문서로 저장</button>`;
+    msgs.appendChild(saveRow);
+    msgs.scrollTop = msgs.scrollHeight;
+
+  } catch(e) {
+    loading.innerHTML = `<div class="ai-name">JAY AI</div>${e.message === '자막 없음' ? '이 영상엔 자막이 없어 😅<br><span style="font-size:12px;color:var(--muted)">자막 직접 복사해서 붙여넣고 "요약해줘" 입력해봐</span>' : '실패 😅 잠깐 후 다시 해봐'}`;
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+}
+
+async function runYoutubeTextProcess(input, mode) {
+  const msgs = document.getElementById('dumpMessages');
+  const typing = document.createElement('div');
+  typing.className = 'dump-typing';
+  typing.innerHTML = '<div class="dots"><span></span><span></span><span></span></div>';
+  msgs.appendChild(typing); msgs.scrollTop = msgs.scrollHeight;
+
+  const systemMap = {
+    translate: `텍스트를 자연스러운 한국어로 완전 번역해. 유튜브 자막 형식이면 타임스탬프 제거하고 문단으로 정리해서 번역. 전체 내용 빠짐없이.`,
+    summarize: `유튜브 영상 자막이나 긴 텍스트를 분석해서 한국어로 정리해.\n반드시 아래 구조로:\n# 핵심 요약 (3줄)\n## 주요 내용\n• 포인트1\n• 포인트2\n## 인사이트\n• JAY에게 유용한 관점\n## 한줄 결론`
+  };
+
+  try {
+    const raw = await callClaude([{ role:'user', content: input }], systemMap[mode]);
+    typing.remove();
+    const aiBubble = document.createElement('div');
+    aiBubble.className = 'dump-msg-ai';
+    aiBubble.innerHTML = `<div class="ai-name">JAY AI · ${mode === 'translate' ? '번역' : '요약'}</div>` + raw.replace(/\n/g,'<br>').replace(/#{1,3} (.+)/g, '<strong>$1</strong>');
+    msgs.appendChild(aiBubble);
+
+    // 문서로 저장 버튼
+    const saveBtn = document.createElement('div');
+    saveBtn.style.cssText = 'display:flex;gap:8px;padding:0 4px 8px';
+    saveBtn.innerHTML = `<button onclick="saveYtToDoc(this)" data-content="${encodeURIComponent(raw)}" data-mode="${mode}" style="padding:8px 14px;border-radius:10px;border:none;background:var(--surface3);color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit">📄 문서로 저장</button>`;
+    msgs.appendChild(saveBtn);
+    msgs.scrollTop = msgs.scrollHeight;
+  } catch(e) {
+    typing.remove();
+    const err = document.createElement('div'); err.className = 'dump-msg-ai';
+    err.innerHTML = `<div class="ai-name">JAY AI</div>오류 났어 😅 다시 해봐`;
+    msgs.appendChild(err);
+  }
+}
+
+function saveYtToDoc(btn) {
+  const content = decodeURIComponent(btn.dataset.content);
+  const mode = btn.dataset.mode;
+  const title = `${mode === 'translate' ? '번역' : '요약'} · ${new Date().toLocaleDateString('ko-KR')}`;
+  const doc = { id: 'doc_' + Date.now(), title, content: content.replace(/\n/g,'<br>'), tags: ['유튜브', mode === 'translate' ? '번역' : '요약'], section: 'misc', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+  docsData.push(doc);
+  localStorage.setItem('jayDocs', JSON.stringify(docsData));
+  btn.textContent = '✅ 저장됨';
+  btn.disabled = true;
+  showToast('문서에 저장됨');
+}
+
+// ===== COMPAT STUBS =====
+function classifyAndSave() {} function showTagReview() {} function toggleTag() {} function confirmTags() {} function cancelTagReview() {}
+function switchLeft(tab) {} function switchRight(tab) {} function exportDay() {}
+
+// ===== INIT =====
+(function migrateIsDocMemos() {
+  const isDocMemos = memoData.filter(m => m.isDoc);
+  if (!isDocMemos.length) return;
+  isDocMemos.forEach(m => {
+    if (docsData.find(d => d.migratedId === m.id)) return;
+    const lines = m.text.split('\n');
+    const titleLine = lines.find(l => l.startsWith('# '));
+    const title = titleLine ? titleLine.slice(2) : (m.text.slice(0,30)||'가져온 문서');
+    const html = m.text.split('\n').map(line => { if(line.startsWith('# '))return`<h1>${line.slice(2)}</h1>`;if(line.startsWith('## '))return`<h2>${line.slice(3)}</h2>`;if(line.trim()==='')return'';return`<p>${line}</p>`;}).join('');
+    docsData.push({ id: Date.now().toString()+Math.random(), title, content: html, tags: m.tags||[], section: CAT_TO_SECTION[m.category]||'misc', createdAt: m.date, updatedAt: m.date, migratedId: m.id, fromChat: true });
+  });
+  memoData = memoData.filter(m => !m.isDoc);
+  localStorage.setItem('jayMemo', JSON.stringify(memoData)); saveDocs();
+})();
+
+(function() {
+  const y = document.getElementById('goalYear');
+  const m = document.getElementById('goalMonth');
+  const d = document.getElementById('goalDay');
+  if (!y) return;
+  const now = new Date();
+  for (let i = now.getFullYear(); i <= now.getFullYear()+10; i++) { const o = document.createElement('option'); o.value=i; o.textContent=i+'년'; y.appendChild(o); }
+  for (let i = 1; i <= 12; i++) { const o = document.createElement('option'); o.value=String(i).padStart(2,'0'); o.textContent=i+'월'; m.appendChild(o); }
+  for (let i = 1; i <= 31; i++) { const o = document.createElement('option'); o.value=String(i).padStart(2,'0'); o.textContent=i+'일'; d.appendChild(o); }
+})();
+
+updateHeader();
+renderAll();
+// 비활성 뷰 초기 숨김
+document.querySelectorAll('.view:not(.active)').forEach(e => e.style.display = 'none');
+setTimeout(() => { if (Object.keys(allData).some(k => allData[k].diary)) renderHistory(); }, 100);
+</script>
+</body>
+</html>
