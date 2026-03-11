@@ -1273,7 +1273,7 @@ async function generateActionPlan() {
   btn.disabled = true; btn.textContent = '생성 중...';
   loading.style.display = 'flex'; listEl.innerHTML = '';
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch('https://memo-pied-nu.vercel.app/api/claude', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
@@ -1609,7 +1609,7 @@ function toggleUrgent(i) { const day = getDay(allData, currentDate); day.tasks[i
 
 // ===== AI =====
 async function callClaude(messages, system) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch('https://memo-pied-nu.vercel.app/api/claude', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 4000, system, messages })
